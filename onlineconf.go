@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path"
 	"strconv"
 	"sync"
 
+	"github.com/alldroll/cdb"
 	"github.com/fsnotify/fsnotify"
-	"github.com/jbarham/go-cdb"
+	"golang.org/x/exp/mmap"
 )
 
 const configDir = "/usr/local/etc/onlineconf"
@@ -62,42 +64,56 @@ func SetOutput(w io.Writer) {
 	log.SetOutput(w)
 }
 
+// Module is a structure that associated with onlineconf module file.
 type Module struct {
-	m    sync.RWMutex
-	name string
-	file string
-	cdb  *cdb.Cdb
+	m        sync.RWMutex
+	name     string
+	filePath string
+	mmapFile *mmap.ReaderAt
+	cdb      cdb.Reader
 }
 
 func newModule(name string) *Module {
-	file := fmt.Sprintf("%s/%s.cdb", configDir, name)
-	cdb, err := cdb.Open(file)
+	fileName := fmt.Sprintf("%s.cdb", name)
+	filePath := path.Join(configDir, fileName)
+
+	cdbFile, err := mmap.Open(filePath)
 	if err != nil {
 		panic(err)
 	}
-	return &Module{name: name, file: file, cdb: cdb}
+
+	cdbReader, err := cdb.New().GetReader(cdbFile)
+	if err != nil {
+		panic(err)
+	}
+
+	return &Module{name: name, filePath: filePath, mmapFile: cdbFile, cdb: cdbReader}
 }
 
 func (m *Module) reopen() {
-	log.Printf("Reopen %s\n", m.file)
+	log.Printf("Reopen %s\n", m.filePath)
 	m.m.Lock()
 	defer m.m.Unlock()
-	cdb, err := cdb.Open(m.file)
+	cdbFile, err := mmap.Open(m.filePath)
 	if err != nil {
-		log.Printf("Reopen file %v error: %v\n", m.file, err)
-	} else {
-		m.cdb.Close()
-		m.cdb = cdb
+		log.Printf("Reopen file %v error: %v\n", m.filePath, err)
 	}
+
+	cdbReader, err := cdb.New().GetReader(cdbFile)
+	if err != nil {
+		log.Printf("Reopen file %v error on getting cdb reader: %v\n", m.filePath, err)
+	}
+	m.cdb = cdbReader
+
+	m.mmapFile.Close()
+	m.mmapFile = cdbFile
 }
 
 func (m *Module) get(path string) (byte, []byte) {
-	m.m.RLock()
-	defer m.m.RUnlock()
-	data, err := m.cdb.Data([]byte(path))
+	data, err := m.cdb.Get([]byte(path))
 	if err != nil || len(data) == 0 {
 		if err != io.EOF {
-			log.Printf("Get %v:%v error: %v", m.file, path, err)
+			log.Printf("Get %v:%v error: %v", m.filePath, path, err)
 		}
 		return 0, data
 	}
@@ -185,7 +201,7 @@ func GetModule(name string) *Module {
 	module := newModule(name)
 
 	modules.byName[module.name] = module
-	modules.byFile[module.file] = module
+	modules.byFile[module.filePath] = module
 
 	return module
 }
