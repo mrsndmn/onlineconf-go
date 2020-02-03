@@ -16,3 +16,7 @@ Reading parameters from the module `"TREE"` can be simpler:
 s := onlineconf.GetString("/my/parameter", "default value")
 i := onlineconf.GetInt("/my/parameter", 300)
 ```
+
+Логика такая:
+Если нужно дефолтное значение, значит параметр не реквайред
+Дефолтное значение можно не передавать, но только для Must* методов -- такие медоты вычитываются из конфига только один раз
