@@ -124,6 +124,10 @@ func (suite *OCTestSuite) TestInt() {
 			panic(fmt.Errorf("Cant parse test record int: %w", err))
 		}
 		suite.Equal(ocInt, testInt)
+
+		ocInt, ok = suite.module.IntWithDef(string(testRec.key), 0)
+		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		suite.Equal(ocInt, testInt)
 	}
 
 	for i, testRec := range suite.testRecordsInt {
@@ -138,6 +142,11 @@ func (suite *OCTestSuite) TestString() {
 		ocStr, ok := suite.module.String(string(testRec.key))
 		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
 		suite.Equal(string(testRec.val[1:]), ocStr)
+
+		ocStr, ok = suite.module.StringWithDef(string(testRec.key), "")
+		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		suite.Equal(string(testRec.val[1:]), ocStr)
+
 	}
 
 	for i, testRec := range suite.testRecordsStr {

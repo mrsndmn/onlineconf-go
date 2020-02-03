@@ -156,17 +156,16 @@ func (m *Module) fillParams() {
 		panic(err) // todo fixme
 	}
 
-	for {
-		hasNext, err := cdbIter.Next()
-		if err != nil {
-			panic(err) // todo fix me
-		}
+	record := cdbIter.Record()
+	_, ks := record.Key()
+	log.Printf("1 rec: %d", ks)
 
-		if !hasNext {
+	for {
+		record := cdbIter.Record()
+		if record == nil {
 			break
 		}
 
-		record := cdbIter.Record()
 		keyReader, keySize := record.Key()
 		key := make([]byte, int(keySize))
 		if _, err = keyReader.Read(key); err != nil {
@@ -208,6 +207,14 @@ func (m *Module) fillParams() {
 			panic(fmt.Sprintf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, string(key)))
 		}
 
+		if !cdbIter.HasNext() {
+			break
+		}
+
+		_, err := cdbIter.Next()
+		if err != nil {
+			panic(err) // todo fix me
+		}
 	}
 
 	m.IntParams = intParams
