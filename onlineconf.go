@@ -12,11 +12,10 @@ import (
 
 func loadModuleFromFile(filePath string) (*Module, error) {
 	cdbFile, err := mmap.Open(filePath)
-	defer cdbFile.Close()
-
 	if err != nil {
 		return nil, fmt.Errorf("Cant open filr %s: %w", filePath, err) // todo check %w works
 	}
+	defer cdbFile.Close()
 
 	module, err := NewModule(cdbFile)
 	if err != nil {

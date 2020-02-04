@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/alldroll/cdb"
+	"github.com/pkg/errors"
 )
 
 // Module is a structure that associated with onlineconf module file.
@@ -51,7 +52,7 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 
 	cdbIter, err := cdb.Iterator()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cant get cdb iterator")
 	}
 
 	record := cdbIter.Record()
@@ -67,13 +68,13 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 		keyReader, keySize := record.Key()
 		key := make([]byte, int(keySize))
 		if _, err = keyReader.Read(key); err != nil {
-			return err
+			return errors.Wrap(err, "cant read cdb key")
 		}
 
 		valReader, valSize := record.Value()
 		val := make([]byte, int(valSize))
 		if _, err = valReader.Read(val); err != nil {
-			return err
+			return errors.Wrap(err, "cant read cdb value")
 		}
 
 		if len(val) < 1 {
@@ -101,6 +102,7 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 		} else if paramTypeByte == 'j' {
 			// not supported yet
 			// todo support json params
+			panic("not supported record type")
 		} else {
 			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, string(key))
 		}
@@ -111,7 +113,7 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 
 		_, err := cdbIter.Next()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "cant get next cdb record")
 		}
 	}
 
