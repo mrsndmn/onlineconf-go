@@ -5,277 +5,108 @@
 package onlineconf
 
 import (
-	"fmt"
-	"log"
-	"path"
-	"path/filepath"
-	"strconv"
-
-	"github.com/alldroll/cdb"
-	"github.com/fsnotify/fsnotify"
-	"golang.org/x/exp/mmap"
+	"errors"
+	"sync"
 )
 
-// DefaultModulesDir defines default direcotry for modules
-const DefaultModulesDir = "/usr/local/etc/onlineconf"
+// ErrModuleAlreadyLoaded returned on double module loading
+var ErrModuleAlreadyLoaded = errors.New("This module was already loaded")
 
-// OCPath is a type of path of any parameter in Onlineconf's CDB.
-// It aliased to []byte. You can use it to avoid unnecessary
-// copying in string to []bytes converting. Example:
-// 	onlineconf.GetInt("/path/to/param"..., 0)
+// ErrNoSuchModule returned if no module was found with that name
+var ErrNoSuchModule = errors.New("Module not found")
 
-// ModuleOptions contains onlineconf module options
-type ModuleOptions struct {
-	Dir       string // Dir points to modules directory
-	NoInotify bool
+// ModuleFactory opens onlineconf modules and reloads them.
+// It allows to use consistent module configuration.
+// It locks on module reloading, but only modFactory.GetModule calls could be blocked.
+// Communication with module's methoods won't be locked.
+type ModuleFactory struct {
+	omLock          *sync.RWMutex // opened modules lock
+	moduleReloaders map[string]*ModuleReloader
 }
 
-// todo
-// локи для модулей -- это не вариант. Лучше отдавать копию
-// онлайнконфа на каждый запрос
+// Module returns the last successfully updated onlineconf module
+func (mf *ModuleFactory) Module(moduleName string) (*Module, error) {
+	mf.omLock.RLock()
+	mr, ok := mf.moduleReloaders[moduleName]
+	mf.omLock.RUnlock()
 
-// Module is a structure that associated with onlineconf module file.
-type Module struct {
-	options      ModuleOptions
-	Name         string
-	cdbFile      *mmap.ReaderAt
-	CDB          cdb.Reader
-	watcher      *fsnotify.Watcher
-	StringParams map[string]string
-	IntParams    map[string]int
+	if !ok {
+		return nil, ErrNoSuchModule
+	}
+
+	return mr.module, nil
 }
 
-// NewModuleFromFile opens module from the specified file
-func NewModuleFromFile(filePath string) (*Module, error) {
-	dir := filepath.Dir(filePath)
-	file := filepath.Base(filePath)
-	return NewModuleWithOptions(file, ModuleOptions{
-		Dir: dir,
-	})
+// NewModuleFactory creates new module facotry
+func NewModuleFactory() *ModuleFactory {
+	return &ModuleFactory{
+		moduleReloaders: map[string]*ModuleReloader{},
+	}
 }
 
-// NewModule opens onlineconf module from
-// onlineconf.DefaultModulesDir
-func NewModule(moduleName string) (*Module, error) {
-	return NewModuleWithOptions(moduleName, ModuleOptions{
-		Dir:       DefaultModulesDir,
-		NoInotify: false,
-	})
-}
-
-// NewModuleWithOptions opens onlineconf module cdb file, maps it on memory,
+// LoadModule opens onlineconf module cdb file, maps it on memory,
 // parses and setsup inotify watcher for this file.
-func NewModuleWithOptions(moduleName string, ops ModuleOptions) (*Module, error) {
-	// cdbName := fmt.Sprintf("%s.cdb", moduleName)
-	filePath := path.Join(ops.Dir, moduleName)
-
-	cdbFile, err := mmap.Open(filePath)
+func (mf *ModuleFactory) LoadModule(ops *LoaderOptions) (*ModuleReloader, error) {
+	mr, err := NewModuleReloader(ops)
 	if err != nil {
-		return nil, fmt.Errorf("Cant open filr %s: %w", filePath, err) // todo check %w works
+		return nil, err
 	}
 
-	cdbReader, err := cdb.New().GetReader(cdbFile)
-	if err != nil {
-		return nil, fmt.Errorf("Cant cant cdb reader for module %s: %w", moduleName, err)
-	}
-
-	var watcher *fsnotify.Watcher
-
-	if !ops.NoInotify {
-		watcher, err = fsnotify.NewWatcher()
-		if err != nil {
-			return nil, fmt.Errorf("Cant init inotify watcher: %w", err)
-		}
-
-		err = watcher.Add(filePath)
-		if err != nil {
-			return nil, fmt.Errorf("Cant add inotify watcher for module %s: %w", moduleName, err)
-		}
-		go func() {
-			for {
-				select {
-				case ev := <-watcher.Events:
-
-					if ev.Op&fsnotify.Create == fsnotify.Create {
-						log.Printf("Inotify event: %#v", ev)
-						panic("todo support module reload") //todo support module reload
-					}
-
-				case err := <-watcher.Errors:
-					if err != nil {
-						log.Printf("Watch %v error: %v\n", ops.Dir, err)
-					}
-				}
-			}
-		}()
-	}
-
-	module := &Module{
-		options: ops,
-		Name:    moduleName,
-		cdbFile: cdbFile,
-		CDB:     cdbReader,
-		watcher: watcher,
-	}
-
-	// todo подумать, как будут обновляться модули
-	// кажется, что горутинка при обновлении файлика должна
-	// генерить новый модуль и отдавать ссылку нна него по запросу
-	// пока файлик не обновится еще раз
-	module.fillParams()
-	return module, nil
+	mr.reload()
+	mf.watch(mr)
+	return mr, nil
 }
 
-// Close stops inotify watcher for module and closes module cdb file
-func (m *Module) Close() error {
-	if m.watcher != nil {
-		err := m.watcher.Close()
-		if err != nil {
-			return fmt.Errorf("Can't close inotify watcher for module %s, %w", m.Name, err)
-		}
-	}
+// CloseModule closes module with specified name and stops reloader
+func (mf *ModuleFactory) CloseModule(moduleName string) error {
 
-	return m.cdbFile.Close()
-}
+	mf.omLock.RLock()
+	mr, ok := mf.moduleReloaders[moduleName]
+	mf.omLock.RLock()
 
-// для того, чтобы не приходилось каждый раз парсить
-// содержимое конфига, это можно сделать один раз.
-// для этого надо знать, от онлайнконфа, какого типа даннный парамерт
-// так же, как это сделано сейас, например, для JSON можно писать подсказки
-// в cdb файле и парсить или не парсить данное число.
-// Как вариант, можно все параметры, для которых не указан тип,
-// пытаться распарсить и как число, и как строку, и как число разных типов uint64 и т д
-// то, что получилось, складывать в отдельные мапки и при обращении вообще не ходить в cdb файл
-// до этого, наверное, интересно побенчить, на сколько мапка будет быстрее cdb
-func (m *Module) fillParams() {
-	stringParams := map[string]string{}
-	intParams := map[string]int{}
-
-	cdbIter, err := m.CDB.Iterator()
-	if err != nil {
-		panic(err) // todo fixme
-	}
-
-	record := cdbIter.Record()
-	_, ks := record.Key()
-	log.Printf("1 rec: %d", ks)
-
-	for {
-		record := cdbIter.Record()
-		if record == nil {
-			break
-		}
-
-		keyReader, keySize := record.Key()
-		key := make([]byte, int(keySize))
-		if _, err = keyReader.Read(key); err != nil {
-			panic(err)
-		}
-
-		valReader, valSize := record.Value()
-		val := make([]byte, int(valSize))
-		if _, err = valReader.Read(val); err != nil {
-			panic(err)
-		}
-
-		if len(val) < 1 {
-			panic(fmt.Errorf("Onlineconf value must contain at least 1 byte: `typeByte|ParamData`"))
-		}
-
-		log.Printf("oc parsing: %s %s", string(key), string(val))
-
-		// val's first byte defines datatype of config value
-		// onlineconf currently knows 's' and 'j' data types
-		paramTypeByte := val[0]
-		if paramTypeByte == 's' { // params type string
-			keyStr := string(key)
-			valStr := string(val[1:])
-
-			// todo? check val first byte.
-			// if its 0
-			stringParams[keyStr] = valStr
-			log.Printf("str param: %s %s", keyStr, valStr)
-
-			if intParam, err := strconv.Atoi(valStr); err == nil {
-				intParams[keyStr] = intParam
-				log.Printf("int param: %s %d", keyStr, intParam)
-			}
-		} else if paramTypeByte == 'j' {
-			// not supported yet
-			// todo support json params
-		} else {
-			panic(fmt.Sprintf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, string(key)))
-		}
-
-		if !cdbIter.HasNext() {
-			break
-		}
-
-		_, err := cdbIter.Next()
-		if err != nil {
-			panic(err) // todo fix me
-		}
-	}
-
-	m.IntParams = intParams
-	m.StringParams = stringParams
-	return
-}
-
-// String returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is a string.
-// In the other case it returns the boolean false and an empty string.
-func (m *Module) String(path string) (string, bool) {
-	param, ok := m.StringParams[path]
-	return param, ok
-}
-
-// StringWithDef returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is a string.
-// In the other case it returns the boolean false and an empty string.
-func (m *Module) StringWithDef(path string, defaultValue string) (string, bool) {
-	param, ok := m.StringParams[path]
 	if !ok {
-		return defaultValue, ok
+		return ErrNoSuchModule
 	}
-	return param, ok
+
+	mf.omLock.Lock()
+
+	delete(mf.moduleReloaders, moduleName)
+	err := mr.Close()
+
+	mf.omLock.Unlock()
+
+	return err
 }
 
-// Int returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is an int.
-// In the other case it returns the boolean false and zero.
-func (m *Module) Int(path string) (int, bool) {
-	param, ok := m.IntParams[path]
-	return param, ok
+// CloseAllModules closes all modules. Not concurrency safe: if some modules were loaded while
+// old modules was being deleted, new modules won't be deleted.
+// Error returned if at least one module cant be closed.
+func (mf *ModuleFactory) CloseAllModules() error {
+	for _, mr := range mf.moduleReloaders {
+		err := mf.CloseModule(mr.ops.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// IntWithDef returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is an int.
-// In the other case it returns the boolean false and zero.
-func (m *Module) IntWithDef(path string, defaultValue int) (int, bool) {
-	param, ok := m.IntParams[path]
-	if !ok {
-		return defaultValue, ok
-	}
-	return param, ok
-}
+func (mf *ModuleFactory) watch(mr *ModuleReloader) error {
 
-// MustString returns value of a named parameter from the module.
-// It panics if no such parameter or this parameter is not a string.
-func (m *Module) MustString(path string) string {
-	param, ok := m.StringParams[path]
-	if !ok {
-		panic(fmt.Errorf("Missing required parameter in onlinecinf module %s: %s", m.Name, path))
-	}
-	return param
-}
+	moduleName := mr.ops.Name
 
-// MustInt returns value of a named parameter from the module.
-// It panics if no such parameter or this parameter is not an int
-func (m *Module) MustInt(path string) int {
-	param, ok := m.IntParams[path]
-	if !ok {
-		panic(fmt.Errorf("Missing required parameter in onlinecinf module %s: %s", m.Name, path))
+	mf.omLock.RLock()
+	_, ok := mf.moduleReloaders[moduleName]
+	mf.omLock.RUnlock()
+
+	if ok {
+		return ErrModuleAlreadyLoaded
 	}
-	return param
+
+	mf.omLock.Lock()
+	mf.moduleReloaders[moduleName] = mr
+	mr.startWatcher()
+	mf.omLock.Unlock()
+
+	return nil
 }

@@ -12,11 +12,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGet(t *testing.T) {
-	cdb.New()
-
-}
-
 type testCDBRecord struct {
 	key []byte
 	val []byte
