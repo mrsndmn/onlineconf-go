@@ -109,8 +109,10 @@ func (suite *OCTestSuite) fillTestCDB() {
 }
 
 func (suite *OCTestSuite) TestInt() {
+	module := suite.mr.Module()
+
 	for _, testRec := range suite.testRecordsInt {
-		ocInt, ok := suite.mr.Module().Int(string(testRec.key))
+		ocInt, ok := module.Int(string(testRec.key))
 		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		testInt, err := strconv.Atoi(string(testRec.val[1:]))
 		if err != nil {
@@ -118,25 +120,27 @@ func (suite *OCTestSuite) TestInt() {
 		}
 		suite.Equal(ocInt, testInt)
 
-		ocInt, ok = suite.mr.Module().IntWithDef(string(testRec.key), 0)
+		ocInt, ok = module.IntWithDef(string(testRec.key), 0)
 		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(ocInt, testInt)
 	}
 
 	for i, testRec := range suite.testRecordsInt {
-		ocInt, ok := suite.mr.Module().IntWithDef(string(testRec.key)+"_not_exists", i)
+		ocInt, ok := module.IntWithDef(string(testRec.key)+"_not_exists", i)
 		suite.False(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(ocInt, i, "Default result was returned")
 	}
 }
 
 func (suite *OCTestSuite) TestString() {
+	module := suite.mr.Module()
+
 	for _, testRec := range suite.testRecordsStr {
-		ocStr, ok := suite.mr.Module().String(string(testRec.key))
+		ocStr, ok := module.String(string(testRec.key))
 		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(string(testRec.val[1:]), ocStr)
 
-		ocStr, ok = suite.mr.Module().StringWithDef(string(testRec.key), "")
+		ocStr, ok = module.StringWithDef(string(testRec.key), "")
 		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(string(testRec.val[1:]), ocStr)
 
@@ -144,7 +148,7 @@ func (suite *OCTestSuite) TestString() {
 
 	for i, testRec := range suite.testRecordsStr {
 		defaultParamValue := "test_not_exists_" + strconv.Itoa(i)
-		ocStr, ok := suite.mr.Module().StringWithDef(string(testRec.key)+"_not_exists", defaultParamValue)
+		ocStr, ok := module.StringWithDef(string(testRec.key)+"_not_exists", defaultParamValue)
 		suite.False(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(ocStr, defaultParamValue, "Default result was returned")
 	}

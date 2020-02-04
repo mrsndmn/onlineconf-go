@@ -29,7 +29,10 @@ func NewModule(reader io.ReaderAt) (*Module, error) {
 	// кажется, что горутинка при обновлении файлика должна
 	// генерить новый модуль и отдавать ссылку нна него по запросу
 	// пока файлик не обновится еще раз
-	module.fillParams(cdbReader)
+	err = module.fillParams(cdbReader)
+	if err != nil {
+		return nil, err
+	}
 	return module, nil
 }
 
@@ -42,13 +45,13 @@ func NewModule(reader io.ReaderAt) (*Module, error) {
 // пытаться распарсить и как число, и как строку, и как число разных типов uint64 и т д
 // то, что получилось, складывать в отдельные мапки и при обращении вообще не ходить в cdb файл
 // до этого, наверное, интересно побенчить, на сколько мапка будет быстрее cdb
-func (m *Module) fillParams(cdb cdb.Reader) {
+func (m *Module) fillParams(cdb cdb.Reader) error {
 	stringParams := map[string]string{}
 	intParams := map[string]int{}
 
 	cdbIter, err := cdb.Iterator()
 	if err != nil {
-		panic(err) // todo fixme
+		return err
 	}
 
 	record := cdbIter.Record()
@@ -64,17 +67,17 @@ func (m *Module) fillParams(cdb cdb.Reader) {
 		keyReader, keySize := record.Key()
 		key := make([]byte, int(keySize))
 		if _, err = keyReader.Read(key); err != nil {
-			panic(err)
+			return err
 		}
 
 		valReader, valSize := record.Value()
 		val := make([]byte, int(valSize))
 		if _, err = valReader.Read(val); err != nil {
-			panic(err)
+			return err
 		}
 
 		if len(val) < 1 {
-			panic(fmt.Errorf("Onlineconf value must contain at least 1 byte: `typeByte|ParamData`"))
+			return fmt.Errorf("Onlineconf value must contain at least 1 byte: `typeByte|ParamData`")
 		}
 
 		log.Printf("oc parsing: %s %s", string(key), string(val))
@@ -99,7 +102,7 @@ func (m *Module) fillParams(cdb cdb.Reader) {
 			// not supported yet
 			// todo support json params
 		} else {
-			panic(fmt.Sprintf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, string(key)))
+			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, string(key))
 		}
 
 		if !cdbIter.HasNext() {
@@ -108,13 +111,13 @@ func (m *Module) fillParams(cdb cdb.Reader) {
 
 		_, err := cdbIter.Next()
 		if err != nil {
-			panic(err) // todo fix me
+			return err
 		}
 	}
 
 	m.IntParams = intParams
 	m.StringParams = stringParams
-	return
+	return nil
 }
 
 // String returns value of a named parameter from the module.
