@@ -24,7 +24,7 @@ type ReloaderOptions struct {
 // ModuleReloader watchers for module updates and reloads it
 type ModuleReloader struct {
 	module         *Module
-	mLock          *sync.RWMutex
+	modMu          *sync.RWMutex // module mutex
 	ops            *ReloaderOptions
 	inotifyWatcher *fsnotify.Watcher
 }
@@ -42,7 +42,7 @@ func NewModuleReloader(ops *ReloaderOptions) (*ModuleReloader, error) {
 
 	mr := ModuleReloader{
 		ops:   ops,
-		mLock: &sync.RWMutex{},
+		modMu: &sync.RWMutex{},
 	}
 	err := mr.reload()
 	if err != nil {
@@ -64,8 +64,8 @@ func (mr *ModuleReloader) Close() error {
 
 // Module returns the last successfully updated version of module
 func (mr *ModuleReloader) Module() *Module {
-	mr.mLock.RLock()
-	defer mr.mLock.RUnlock()
+	mr.modMu.RLock()
+	defer mr.modMu.RUnlock()
 	return mr.module
 }
 
@@ -109,8 +109,8 @@ func (mr *ModuleReloader) reload() error {
 		return err
 	}
 
-	mr.mLock.Lock()
+	mr.modMu.Lock()
 	mr.module = module
-	mr.mLock.Unlock()
+	mr.modMu.Unlock()
 	return nil
 }
