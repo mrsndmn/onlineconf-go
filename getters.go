@@ -21,6 +21,16 @@ func (m *Module) StringWithDef(path string, defaultValue string) (string, bool) 
 	return param, ok
 }
 
+// MustString returns value of a named parameter from the module.
+// It panics if no such parameter or this parameter is not a string.
+func (m *Module) MustString(path string) string {
+	param, ok := m.StringParams[path]
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
 // Int returns value of a named parameter from the module.
 // It returns the boolean true if the parameter exists and is an int.
 // In the other case it returns the boolean false and zero.
@@ -40,22 +50,132 @@ func (m *Module) IntWithDef(path string, defaultValue int) (int, bool) {
 	return param, ok
 }
 
-// MustString returns value of a named parameter from the module.
-// It panics if no such parameter or this parameter is not a string.
-func (m *Module) MustString(path string) string {
-	param, ok := m.StringParams[path]
-	if !ok {
-		panic(fmt.Errorf("Missing required parameter in onlineconf %s", path))
-	}
-	return param
-}
-
 // MustInt returns value of a named parameter from the module.
 // It panics if no such parameter or this parameter is not an int
 func (m *Module) MustInt(path string) int {
 	param, ok := m.IntParams[path]
 	if !ok {
-		panic(fmt.Errorf("Missing required parameter in onlineconf %s", path))
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
+// MapInterfaceInterface
+//
+//
+func (m *Module) MapInterfaceInterface(path string) (string, bool) {
+	param, ok := m.MapInterfaceInterfaceParams[path]
+	return param, ok
+}
+
+func (m *Module) MapInterfaceInterfaceWithDef(path string, defaultValue string) (string, bool) {
+	param, ok := m.MapInterfaceInterfaceParams[path]
+	if !ok {
+		return defaultValue, ok
+	}
+	return param, ok
+}
+
+func (m *Module) MustMapInterfaceInterface(path string) string {
+	param, ok := m.MapInterfaceInterfaceParams[path]
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
+// MapIntInt
+//
+//
+func (m *Module) MapIntInt(path string) (string, bool) {
+	param, ok := m.MapIntIntParams[path]
+	return param, ok
+}
+
+func (m *Module) MapIntIntWithDef(path string, defaultValue string) (string, bool) {
+	param, ok := m.MapIntIntParams[path]
+	if !ok {
+		return defaultValue, ok
+	}
+	return param, ok
+}
+
+func (m *Module) MustMapIntInt(path string) string {
+	param, ok := m.MapIntIntParams[path]
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
+// MapIntString
+//
+//
+func (m *Module) MapIntString(path string) (string, bool) {
+	param, ok := m.MapIntStringParams[path]
+	return param, ok
+}
+
+func (m *Module) MapIntStringWithDef(path string, defaultValue string) (string, bool) {
+	param, ok := m.MapIntStringParams[path]
+	if !ok {
+		return defaultValue, ok
+	}
+	return param, ok
+}
+
+func (m *Module) MustMapIntString(path string) string {
+	param, ok := m.MapIntStringParams[path]
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
+// MapStringInt
+//
+//
+func (m *Module) MapStringInt(path string) (string, bool) {
+	param, ok := m.MapStringIntParams[path]
+	return param, ok
+}
+
+func (m *Module) MapStringIntWithDef(path string, defaultValue string) (string, bool) {
+	param, ok := m.MapStringIntParams[path]
+	if !ok {
+		return defaultValue, ok
+	}
+	return param, ok
+}
+
+func (m *Module) MustMapStringInt(path string) string {
+	param, ok := m.MapStringIntParams[path]
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
+// MapStringString
+//
+//
+func (m *Module) MapStringString(path string) (string, bool) {
+	param, ok := m.MapStringStringParams[path]
+	return param, ok
+}
+
+func (m *Module) MapStringStringWithDef(path string, defaultValue string) (string, bool) {
+	param, ok := m.MapStringStringParams[path]
+	if !ok {
+		return defaultValue, ok
+	}
+	return param, ok
+}
+
+func (m *Module) MustMapStringString(path string) string {
+	param, ok := m.MapStringStringParams[path]
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
 	return param
 }
