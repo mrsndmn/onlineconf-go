@@ -1,11 +1,9 @@
 package onlineconf
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 
 	"github.com/alldroll/cdb"
 	"github.com/pkg/errors"
@@ -119,118 +117,4 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 	}
 
 	return nil
-}
-
-func (m *Module) parseSimpleParams(keyStr, valStr string) {
-	m.StringParams[keyStr] = valStr
-	log.Printf("str param: %s %s", keyStr, valStr)
-
-	if intParam, err := strconv.Atoi(valStr); err == nil {
-		m.IntParams[keyStr] = intParam
-		log.Printf("int param: %s %d", keyStr, intParam)
-	}
-	return
-}
-
-func (m *Module) parseJSONParams(keyStr, valStr string) error {
-	m.RawJSONParams[keyStr] = valStr
-
-	byteVal := []byte(valStr)
-
-	mapInterfaceInterface := make(map[interface{}]interface{})
-	err := json.Unmarshal(byteVal, &mapInterfaceInterface)
-	if err != nil {
-		return errors.Wrapf(err, "invalid json in parameter %s", keyStr)
-	}
-	m.MapInterfaceInterfaceParams[keyStr] = mapInterfaceInterface
-
-	mapStrStr := make(map[string]string)
-	err = json.Unmarshal(byteVal, &mapStrStr)
-	if err != nil {
-		return nil
-	}
-
-	mapStrInt := make(map[string]int)
-	mapIntStr := make(map[int]string)
-	mapIntInt := make(map[int]int)
-
-	for k, v := range mapStrStr {
-		var intK, intV int
-		intK, keyErr := strconv.Atoi(k)
-		intV, valErr := strconv.Atoi(v)
-
-		if keyErr == nil {
-			mapIntStr[intK] = v
-		}
-		if valErr == nil {
-			mapStrInt[k] = intV
-		}
-		if valErr == nil && keyErr == nil {
-			mapIntInt[intK] = intV
-		}
-	}
-
-	m.MapIntIntParams[keyStr] = mapIntInt
-	m.MapIntStringParams[keyStr] = mapIntStr
-	m.MapStringIntParams[keyStr] = mapStrInt
-	m.MapStringStringParams[keyStr] = mapStrStr
-	return nil
-}
-
-// String returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is a string.
-// In the other case it returns the boolean false and an empty string.
-func (m *Module) String(path string) (string, bool) {
-	param, ok := m.StringParams[path]
-	return param, ok
-}
-
-// StringWithDef returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is a string.
-// In the other case it returns the boolean false and an empty string.
-func (m *Module) StringWithDef(path string, defaultValue string) (string, bool) {
-	param, ok := m.StringParams[path]
-	if !ok {
-		return defaultValue, ok
-	}
-	return param, ok
-}
-
-// Int returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is an int.
-// In the other case it returns the boolean false and zero.
-func (m *Module) Int(path string) (int, bool) {
-	param, ok := m.IntParams[path]
-	return param, ok
-}
-
-// IntWithDef returns value of a named parameter from the module.
-// It returns the boolean true if the parameter exists and is an int.
-// In the other case it returns the boolean false and zero.
-func (m *Module) IntWithDef(path string, defaultValue int) (int, bool) {
-	param, ok := m.IntParams[path]
-	if !ok {
-		return defaultValue, ok
-	}
-	return param, ok
-}
-
-// MustString returns value of a named parameter from the module.
-// It panics if no such parameter or this parameter is not a string.
-func (m *Module) MustString(path string) string {
-	param, ok := m.StringParams[path]
-	if !ok {
-		panic(fmt.Errorf("Missing required parameter in onlineconf %s", path))
-	}
-	return param
-}
-
-// MustInt returns value of a named parameter from the module.
-// It panics if no such parameter or this parameter is not an int
-func (m *Module) MustInt(path string) int {
-	param, ok := m.IntParams[path]
-	if !ok {
-		panic(fmt.Errorf("Missing required parameter in onlineconf %s", path))
-	}
-	return param
 }
