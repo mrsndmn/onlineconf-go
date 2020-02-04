@@ -12,10 +12,10 @@ import (
 // DefaultModulesDir defines default directory for modules
 const DefaultModulesDir = "/usr/local/etc/onlineconf"
 
-// LoaderOptions specify loader options
+// ReloaderOptions specify loader options
 // You can specify either FilePath or Name + Dir.
 // If you sprcified only Name, DefaultModulesDir Dir will be used
-type LoaderOptions struct {
+type ReloaderOptions struct {
 	Name     string
 	Dir      string // default in `DefaultModulesDir`
 	FilePath string
@@ -25,12 +25,12 @@ type LoaderOptions struct {
 type ModuleReloader struct {
 	module         *Module
 	mLock          *sync.RWMutex
-	ops            *LoaderOptions
+	ops            *ReloaderOptions
 	inotifyWatcher *fsnotify.Watcher
 }
 
 // NewModuleReloader creates new module reloader
-func NewModuleReloader(ops *LoaderOptions) (*ModuleReloader, error) {
+func NewModuleReloader(ops *ReloaderOptions) (*ModuleReloader, error) {
 	if ops.FilePath == "" {
 		if ops.Dir == "" {
 			ops.Dir = DefaultModulesDir
@@ -41,7 +41,8 @@ func NewModuleReloader(ops *LoaderOptions) (*ModuleReloader, error) {
 	}
 
 	mr := ModuleReloader{
-		ops: ops,
+		ops:   ops,
+		mLock: &sync.RWMutex{},
 	}
 	err := mr.reload()
 	if err != nil {

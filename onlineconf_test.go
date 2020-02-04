@@ -24,7 +24,7 @@ type OCTestSuite struct {
 	testRecordsStr []testCDBRecord
 	testRecordsInt []testCDBRecord
 
-	module *Module
+	mr *ModuleReloader
 }
 
 func TestOCTestSuite(t *testing.T) {
@@ -76,16 +76,14 @@ func (suite *OCTestSuite) SetupTest() {
 
 	suite.fillTestCDB()
 
-	module, err := NewModuleFromFile(f.Name())
+	mr, err := NewModuleReloader(&ReloaderOptions{FilePath: f.Name()})
 	suite.Nilf(err, "Cant init onlineconf module!: %#v", err)
-	suite.module = module
+	suite.mr = mr
 }
 
 func (suite *OCTestSuite) TearDownTest() {
-	err := suite.module.Close()
-	suite.Nilf(err, "Can't close module: %#v", err)
 
-	err = suite.cdbFile.Close()
+	err := suite.cdbFile.Close()
 	suite.Nilf(err, "Can't close cdb file: %#v", err)
 
 	err = os.Remove(suite.cdbFile.Name())
@@ -112,42 +110,42 @@ func (suite *OCTestSuite) fillTestCDB() {
 
 func (suite *OCTestSuite) TestInt() {
 	for _, testRec := range suite.testRecordsInt {
-		ocInt, ok := suite.module.Int(string(testRec.key))
-		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		ocInt, ok := suite.mr.Module().Int(string(testRec.key))
+		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		testInt, err := strconv.Atoi(string(testRec.val[1:]))
 		if err != nil {
 			panic(fmt.Errorf("Cant parse test record int: %w", err))
 		}
 		suite.Equal(ocInt, testInt)
 
-		ocInt, ok = suite.module.IntWithDef(string(testRec.key), 0)
-		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		ocInt, ok = suite.mr.Module().IntWithDef(string(testRec.key), 0)
+		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(ocInt, testInt)
 	}
 
 	for i, testRec := range suite.testRecordsInt {
-		ocInt, ok := suite.module.IntWithDef(string(testRec.key)+"_not_exists", i)
-		suite.False(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		ocInt, ok := suite.mr.Module().IntWithDef(string(testRec.key)+"_not_exists", i)
+		suite.False(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(ocInt, i, "Default result was returned")
 	}
 }
 
 func (suite *OCTestSuite) TestString() {
 	for _, testRec := range suite.testRecordsStr {
-		ocStr, ok := suite.module.String(string(testRec.key))
-		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		ocStr, ok := suite.mr.Module().String(string(testRec.key))
+		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(string(testRec.val[1:]), ocStr)
 
-		ocStr, ok = suite.module.StringWithDef(string(testRec.key), "")
-		suite.True(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		ocStr, ok = suite.mr.Module().StringWithDef(string(testRec.key), "")
+		suite.True(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(string(testRec.val[1:]), ocStr)
 
 	}
 
 	for i, testRec := range suite.testRecordsStr {
 		defaultParamValue := "test_not_exists_" + strconv.Itoa(i)
-		ocStr, ok := suite.module.StringWithDef(string(testRec.key)+"_not_exists", defaultParamValue)
-		suite.False(ok, "Cant find key %s in test onlineconf module %s", string(testRec.key), suite.module.Name)
+		ocStr, ok := suite.mr.Module().StringWithDef(string(testRec.key)+"_not_exists", defaultParamValue)
+		suite.False(ok, "Cant find key %s in test onlineconf", string(testRec.key))
 		suite.Equal(ocStr, defaultParamValue, "Default result was returned")
 	}
 }
