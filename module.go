@@ -1,6 +1,7 @@
 package onlineconf
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,10 +11,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrInvalidCDB means that cdb is invalid
+var ErrInvalidCDB = errors.New("cdb is inconsistent")
+
 // Module is a structure that associated with onlineconf module file.
 type Module struct {
 	StringParams map[string]string
 	IntParams    map[string]int
+
+	RawJSONParams               map[string]string // Here will be all JSON params (not parsed)
+	mapInterfaceInterfaceParams map[string]map[interface{}]interface{}
+	MapIntIntParams             map[string]map[int]int
+	MapIntStringParams          map[string]map[int]string
+	MapStringIntParams          map[string]map[string]int
+	MapStringStringParams       map[string]map[string]string
 }
 
 // NewModule parses cdb file and copies all content to local maps
@@ -37,18 +48,17 @@ func NewModule(reader io.ReaderAt) (*Module, error) {
 	return module, nil
 }
 
-// для того, чтобы не приходилось каждый раз парсить
-// содержимое конфига, это можно сделать один раз.
-// для этого надо знать, от онлайнконфа, какого типа даннный парамерт
-// так же, как это сделано сейас, например, для JSON можно писать подсказки
-// в cdb файле и парсить или не парсить данное число.
-// Как вариант, можно все параметры, для которых не указан тип,
-// пытаться распарсить и как число, и как строку, и как число разных типов uint64 и т д
-// то, что получилось, складывать в отдельные мапки и при обращении вообще не ходить в cdb файл
-// до этого, наверное, интересно побенчить, на сколько мапка будет быстрее cdb
 func (m *Module) fillParams(cdb cdb.Reader) error {
 	stringParams := map[string]string{}
 	intParams := map[string]int{}
+
+	// for json params
+	rawJSONParams := map[string]string{}
+	mapInterfaceInterfaceParams := map[string]map[interface{}]interface{}{}
+	mapIntIntParams := map[string]map[int]int{}
+	mapIntStringParams := map[string]map[int]string{}
+	mapStringIntParams := map[string]map[string]int{}
+	mapStringStringParams := map[string]map[string]string{}
 
 	cdbIter, err := cdb.Iterator()
 	if err != nil {
@@ -86,12 +96,10 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 		// val's first byte defines datatype of config value
 		// onlineconf currently knows 's' and 'j' data types
 		paramTypeByte := val[0]
+		keyStr := string(key)
+		valStr := string(val[1:])
 		if paramTypeByte == 's' { // params type string
-			keyStr := string(key)
-			valStr := string(val[1:])
 
-			// todo? check val first byte.
-			// if its 0
 			stringParams[keyStr] = valStr
 			log.Printf("str param: %s %s", keyStr, valStr)
 
@@ -99,12 +107,49 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 				intParams[keyStr] = intParam
 				log.Printf("int param: %s %d", keyStr, intParam)
 			}
-		} else if paramTypeByte == 'j' {
-			// not supported yet
-			// todo support json params
-			panic("not supported record type")
+		} else if paramTypeByte == 'j' { // params type JSON
+			rawJSONParams[keyStr] = valStr
+
+			mapInterfaceInterface := make(map[interface{}]interface{})
+			err := json.Unmarshal(val[1:], &mapInterfaceInterface)
+			if err != nil {
+				return errors.Wrapf(err, "invalid json in parameter %s", keyStr)
+			}
+			mapInterfaceInterfaceParams[keyStr] = mapInterfaceInterface
+
+			mapStrStr := make(map[string]string)
+			err = json.Unmarshal(val[1:], &mapStrStr)
+			if err != nil {
+				continue
+			}
+
+			mapStrInt := make(map[string]int)
+			mapIntStr := make(map[int]string)
+			mapIntInt := make(map[int]int)
+
+			for k, v := range mapStrStr {
+				var intK, intV int
+				intK, keyErr := strconv.Atoi(k)
+				intV, valErr := strconv.Atoi(v)
+
+				if keyErr == nil {
+					mapIntStr[intK] = v
+				}
+				if valErr == nil {
+					mapStrInt[k] = intV
+				}
+				if valErr == nil && keyErr == nil {
+					mapIntInt[intK] = intV
+				}
+			}
+
+			mapIntIntParams[keyStr] = mapIntInt
+			mapIntStringParams[keyStr] = mapIntStr
+			mapStringIntParams[keyStr] = mapStrInt
+			mapStringStringParams[keyStr] = mapStrStr
+
 		} else {
-			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, string(key))
+			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, keyStr)
 		}
 
 		if !cdbIter.HasNext() {
@@ -119,6 +164,8 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 
 	m.IntParams = intParams
 	m.StringParams = stringParams
+	m.RawJSONParams = rawJSONParams
+
 	return nil
 }
 
