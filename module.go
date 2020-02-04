@@ -20,7 +20,7 @@ type Module struct {
 	IntParams    map[string]int
 
 	RawJSONParams               map[string]string // Here will be all JSON params (not parsed)
-	mapInterfaceInterfaceParams map[string]map[interface{}]interface{}
+	MapInterfaceInterfaceParams map[string]map[interface{}]interface{}
 	MapIntIntParams             map[string]map[int]int
 	MapIntStringParams          map[string]map[int]string
 	MapStringIntParams          map[string]map[string]int
@@ -35,7 +35,17 @@ func NewModule(reader io.ReaderAt) (*Module, error) {
 		return nil, fmt.Errorf("Cant cant cdb reader for module: %w", err)
 	}
 
-	module := &Module{}
+	module := &Module{
+		StringParams: map[string]string{},
+		IntParams:    map[string]int{},
+
+		RawJSONParams:               map[string]string{},
+		MapInterfaceInterfaceParams: map[string]map[interface{}]interface{}{},
+		MapIntIntParams:             map[string]map[int]int{},
+		MapIntStringParams:          map[string]map[int]string{},
+		MapStringIntParams:          map[string]map[string]int{},
+		MapStringStringParams:       map[string]map[string]string{},
+	}
 
 	// todo подумать, как будут обновляться модули
 	// кажется, что горутинка при обновлении файлика должна
@@ -49,17 +59,6 @@ func NewModule(reader io.ReaderAt) (*Module, error) {
 }
 
 func (m *Module) fillParams(cdb cdb.Reader) error {
-	stringParams := map[string]string{}
-	intParams := map[string]int{}
-
-	// for json params
-	rawJSONParams := map[string]string{}
-	mapInterfaceInterfaceParams := map[string]map[interface{}]interface{}{}
-	mapIntIntParams := map[string]map[int]int{}
-	mapIntStringParams := map[string]map[int]string{}
-	mapStringIntParams := map[string]map[string]int{}
-	mapStringStringParams := map[string]map[string]string{}
-
 	cdbIter, err := cdb.Iterator()
 	if err != nil {
 		return errors.Wrap(err, "cant get cdb iterator")
@@ -99,55 +98,12 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 		keyStr := string(key)
 		valStr := string(val[1:])
 		if paramTypeByte == 's' { // params type string
-
-			stringParams[keyStr] = valStr
-			log.Printf("str param: %s %s", keyStr, valStr)
-
-			if intParam, err := strconv.Atoi(valStr); err == nil {
-				intParams[keyStr] = intParam
-				log.Printf("int param: %s %d", keyStr, intParam)
-			}
+			m.parseSimpleParams(keyStr, valStr)
 		} else if paramTypeByte == 'j' { // params type JSON
-			rawJSONParams[keyStr] = valStr
-
-			mapInterfaceInterface := make(map[interface{}]interface{})
-			err := json.Unmarshal(val[1:], &mapInterfaceInterface)
+			err := m.parseJSONParams(keyStr, valStr)
 			if err != nil {
-				return errors.Wrapf(err, "invalid json in parameter %s", keyStr)
+				return err
 			}
-			mapInterfaceInterfaceParams[keyStr] = mapInterfaceInterface
-
-			mapStrStr := make(map[string]string)
-			err = json.Unmarshal(val[1:], &mapStrStr)
-			if err != nil {
-				continue
-			}
-
-			mapStrInt := make(map[string]int)
-			mapIntStr := make(map[int]string)
-			mapIntInt := make(map[int]int)
-
-			for k, v := range mapStrStr {
-				var intK, intV int
-				intK, keyErr := strconv.Atoi(k)
-				intV, valErr := strconv.Atoi(v)
-
-				if keyErr == nil {
-					mapIntStr[intK] = v
-				}
-				if valErr == nil {
-					mapStrInt[k] = intV
-				}
-				if valErr == nil && keyErr == nil {
-					mapIntInt[intK] = intV
-				}
-			}
-
-			mapIntIntParams[keyStr] = mapIntInt
-			mapIntStringParams[keyStr] = mapIntStr
-			mapStringIntParams[keyStr] = mapStrInt
-			mapStringStringParams[keyStr] = mapStrStr
-
 		} else {
 			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, keyStr)
 		}
@@ -162,10 +118,62 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 		}
 	}
 
-	m.IntParams = intParams
-	m.StringParams = stringParams
-	m.RawJSONParams = rawJSONParams
+	return nil
+}
 
+func (m *Module) parseSimpleParams(keyStr, valStr string) {
+	m.StringParams[keyStr] = valStr
+	log.Printf("str param: %s %s", keyStr, valStr)
+
+	if intParam, err := strconv.Atoi(valStr); err == nil {
+		m.IntParams[keyStr] = intParam
+		log.Printf("int param: %s %d", keyStr, intParam)
+	}
+	return
+}
+
+func (m *Module) parseJSONParams(keyStr, valStr string) error {
+	m.RawJSONParams[keyStr] = valStr
+
+	byteVal := []byte(valStr)
+
+	mapInterfaceInterface := make(map[interface{}]interface{})
+	err := json.Unmarshal(byteVal, &mapInterfaceInterface)
+	if err != nil {
+		return errors.Wrapf(err, "invalid json in parameter %s", keyStr)
+	}
+	m.MapInterfaceInterfaceParams[keyStr] = mapInterfaceInterface
+
+	mapStrStr := make(map[string]string)
+	err = json.Unmarshal(byteVal, &mapStrStr)
+	if err != nil {
+		return nil
+	}
+
+	mapStrInt := make(map[string]int)
+	mapIntStr := make(map[int]string)
+	mapIntInt := make(map[int]int)
+
+	for k, v := range mapStrStr {
+		var intK, intV int
+		intK, keyErr := strconv.Atoi(k)
+		intV, valErr := strconv.Atoi(v)
+
+		if keyErr == nil {
+			mapIntStr[intK] = v
+		}
+		if valErr == nil {
+			mapStrInt[k] = intV
+		}
+		if valErr == nil && keyErr == nil {
+			mapIntInt[intK] = intV
+		}
+	}
+
+	m.MapIntIntParams[keyStr] = mapIntInt
+	m.MapIntStringParams[keyStr] = mapIntStr
+	m.MapStringIntParams[keyStr] = mapStrInt
+	m.MapStringStringParams[keyStr] = mapStrStr
 	return nil
 }
 
