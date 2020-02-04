@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/pkg/errors"
 )
 
 // DefaultModulesDir defines default directory for modules
@@ -106,7 +107,7 @@ func (mr *ModuleReloader) reload() error {
 	module, err := loadModuleFromFile(mr.ops.FilePath)
 	if err != nil {
 		log.Printf("Cant reload module %s: %#v", mr.ops.Name, err)
-		return err
+		return errors.Wrap(err, "cant reload module")
 	}
 
 	mr.modMu.Lock()

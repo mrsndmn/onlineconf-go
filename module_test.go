@@ -82,8 +82,10 @@ func (suite *OCTestSuite) SetupTest() {
 }
 
 func (suite *OCTestSuite) TearDownTest() {
+	err := suite.mr.Close()
+	suite.Nilf(err, "Can't close module reloader: %#v", err)
 
-	err := suite.cdbFile.Close()
+	err = suite.cdbFile.Close()
 	suite.Nilf(err, "Can't close cdb file: %#v", err)
 
 	err = os.Remove(suite.cdbFile.Name())

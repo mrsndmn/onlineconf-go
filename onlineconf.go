@@ -5,15 +5,13 @@
 package onlineconf
 
 import (
-	"fmt"
-
 	"golang.org/x/exp/mmap"
 )
 
 func loadModuleFromFile(filePath string) (*Module, error) {
 	cdbFile, err := mmap.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("Cant open filr %s: %w", filePath, err) // todo check %w works
+		return nil, err
 	}
 	defer cdbFile.Close()
 
