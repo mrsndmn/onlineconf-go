@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	"golang.org/x/exp/mmap"
 )
 
 // DefaultModulesDir defines default directory for modules
@@ -30,9 +29,43 @@ type ModuleReloader struct {
 	inotifyWatcher *fsnotify.Watcher
 }
 
+// NewModuleReloader creates new module reloader
+func NewModuleReloader(ops *LoaderOptions) (*ModuleReloader, error) {
+	if ops.FilePath == "" {
+		if ops.Dir == "" {
+			ops.Dir = DefaultModulesDir
+		}
+		fileName := fmt.Sprintf("%s.cdb", ops.Name)
+		filePath := path.Join(ops.Dir, fileName)
+		ops.FilePath = filePath
+	}
+
+	mr := ModuleReloader{
+		ops: ops,
+	}
+	err := mr.reload()
+	if err != nil {
+		return nil, err
+	}
+
+	err = mr.startWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	return &mr, nil
+}
+
 // Close closes inofitify watcher. Module will not be updated anymore.
 func (mr *ModuleReloader) Close() error {
 	return mr.inotifyWatcher.Close()
+}
+
+// Module returns the last successfully updated version of module
+func (mr *ModuleReloader) Module() *Module {
+	mr.mLock.RLock()
+	defer mr.mLock.RUnlock()
+	return mr.module
 }
 
 func (mr *ModuleReloader) startWatcher() error {
@@ -68,45 +101,6 @@ func (mr *ModuleReloader) startWatcher() error {
 	return nil
 }
 
-// NewModuleReloader creates new module reloader
-func NewModuleReloader(ops *LoaderOptions) (*ModuleReloader, error) {
-	if ops.FilePath == "" {
-		if ops.Dir == "" {
-			ops.Dir = DefaultModulesDir
-		}
-		fileName := fmt.Sprintf("%s.cdb", ops.Name)
-		filePath := path.Join(ops.Dir, fileName)
-		ops.FilePath = filePath
-	}
-
-	mr := ModuleReloader{
-		ops: ops,
-	}
-	err := mr.reload()
-	if err != nil {
-		return nil, err
-	}
-
-	err = mr.startWatcher()
-	if err != nil {
-		return nil, err
-	}
-
-	return &mr, nil
-}
-
-// CloseModule stops inotify watcher for module and closes module cdb file
-func (mr *ModuleReloader) CloseModule() error {
-	return mr.inotifyWatcher.Close()
-}
-
-// Module returns the last successfully updated version of module
-func (mr *ModuleReloader) Module() *Module {
-	mr.mLock.RLock()
-	defer mr.mLock.RUnlock()
-	return mr.module
-}
-
 func (mr *ModuleReloader) reload() error {
 	module, err := loadModuleFromFile(mr.ops.FilePath)
 	if err != nil {
@@ -118,20 +112,4 @@ func (mr *ModuleReloader) reload() error {
 	mr.module = module
 	mr.mLock.Unlock()
 	return nil
-}
-
-func loadModuleFromFile(filePath string) (*Module, error) {
-	cdbFile, err := mmap.Open(filePath)
-	defer cdbFile.Close()
-
-	if err != nil {
-		return nil, fmt.Errorf("Cant open filr %s: %w", filePath, err) // todo check %w works
-	}
-
-	module, err := NewModule(cdbFile)
-	if err != nil {
-		return nil, err
-	}
-
-	return module, nil
 }

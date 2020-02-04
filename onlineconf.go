@@ -4,109 +4,18 @@
 // If onlineconf-updater modifies them, they are automatically reopened.
 package onlineconf
 
-import (
-	"errors"
-	"sync"
-)
+func loadModuleFromFile(filePath string) (*Module, error) {
+	cdbFile, err := mmap.Open(filePath)
+	defer cdbFile.Close()
 
-// ErrModuleAlreadyLoaded returned on double module loading
-var ErrModuleAlreadyLoaded = errors.New("This module was already loaded")
-
-// ErrNoSuchModule returned if no module was found with that name
-var ErrNoSuchModule = errors.New("Module not found")
-
-// ModuleFactory opens onlineconf modules and reloads them.
-// It allows to use consistent module configuration.
-// It locks on module reloading, but only modFactory.GetModule calls could be blocked.
-// Communication with module's methoods won't be locked.
-type ModuleFactory struct {
-	omLock          *sync.RWMutex // opened modules lock
-	moduleReloaders map[string]*ModuleReloader
-}
-
-// Module returns the last successfully updated onlineconf module
-func (mf *ModuleFactory) Module(moduleName string) (*Module, error) {
-	mf.omLock.RLock()
-	mr, ok := mf.moduleReloaders[moduleName]
-	mf.omLock.RUnlock()
-
-	if !ok {
-		return nil, ErrNoSuchModule
+	if err != nil {
+		return nil, fmt.Errorf("Cant open filr %s: %w", filePath, err) // todo check %w works
 	}
 
-	return mr.module, nil
-}
-
-// NewModuleFactory creates new module facotry
-func NewModuleFactory() *ModuleFactory {
-	return &ModuleFactory{
-		moduleReloaders: map[string]*ModuleReloader{},
-	}
-}
-
-// LoadModule opens onlineconf module cdb file, maps it on memory,
-// parses and setsup inotify watcher for this file.
-func (mf *ModuleFactory) LoadModule(ops *LoaderOptions) (*ModuleReloader, error) {
-	mr, err := NewModuleReloader(ops)
+	module, err := NewModule(cdbFile)
 	if err != nil {
 		return nil, err
 	}
 
-	mr.reload()
-	mf.watch(mr)
-	return mr, nil
-}
-
-// CloseModule closes module with specified name and stops reloader
-func (mf *ModuleFactory) CloseModule(moduleName string) error {
-
-	mf.omLock.RLock()
-	mr, ok := mf.moduleReloaders[moduleName]
-	mf.omLock.RLock()
-
-	if !ok {
-		return ErrNoSuchModule
-	}
-
-	mf.omLock.Lock()
-
-	delete(mf.moduleReloaders, moduleName)
-	err := mr.Close()
-
-	mf.omLock.Unlock()
-
-	return err
-}
-
-// CloseAllModules closes all modules. Not concurrency safe: if some modules were loaded while
-// old modules was being deleted, new modules won't be deleted.
-// Error returned if at least one module cant be closed.
-func (mf *ModuleFactory) CloseAllModules() error {
-	for _, mr := range mf.moduleReloaders {
-		err := mf.CloseModule(mr.ops.Name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (mf *ModuleFactory) watch(mr *ModuleReloader) error {
-
-	moduleName := mr.ops.Name
-
-	mf.omLock.RLock()
-	_, ok := mf.moduleReloaders[moduleName]
-	mf.omLock.RUnlock()
-
-	if ok {
-		return ErrModuleAlreadyLoaded
-	}
-
-	mf.omLock.Lock()
-	mf.moduleReloaders[moduleName] = mr
-	mr.startWatcher()
-	mf.omLock.Unlock()
-
-	return nil
+	return module, nil
 }
