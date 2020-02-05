@@ -3,7 +3,6 @@ package onlineconf
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"testing"
@@ -45,15 +44,8 @@ func (suite *OCTestSuite) getCDBWriter() cdb.Writer {
 	return writer
 }
 
-func (suite *OCTestSuite) SetupTest() {
-	f, err := ioutil.TempFile("", "test_*.cdb")
-	suite.Require().Nilf(err, "Can't open temporary file: %#v", err)
-
-	suite.cdbFile = f
-	suite.cdbHandle = cdb.New() // create new cdb handle
-
-	// generate test records
-	tesRecsCnt := 2
+// generate test records
+func generateTestRecords(tesRecsCnt int) ([]testCDBRecord, []testCDBRecord) {
 	testRecordsStr := make([]testCDBRecord, tesRecsCnt)
 	testRecordsInt := make([]testCDBRecord, tesRecsCnt)
 
@@ -63,14 +55,26 @@ func (suite *OCTestSuite) SetupTest() {
 		testRecordsStr[i].key = []byte("/test/onlineconf/str" + stri)
 		testRecordsStr[i].val = []byte(typeByte + "val" + stri)
 
-		log.Printf("key %s val %s", string(testRecordsStr[i].key), string(testRecordsStr[i].val))
+		// log.Printf("key %s val %s", string(testRecordsStr[i].key), string(testRecordsStr[i].val))
 
 		testRecordsInt[i].key = []byte("/test/onlineconf/int" + stri)
 		testRecordsInt[i].val = []byte(typeByte + stri)
 
-		log.Printf("key %s val %s", string(testRecordsInt[i].key), string(testRecordsInt[i].val))
+		// log.Printf("key %s val %s", string(testRecordsInt[i].key), string(testRecordsInt[i].val))
 
 	}
+	return testRecordsStr, testRecordsInt
+}
+
+func (suite *OCTestSuite) SetupTest() {
+	f, err := ioutil.TempFile("", "test_*.cdb")
+	suite.Require().Nilf(err, "Can't open temporary file: %#v", err)
+
+	suite.cdbFile = f
+	suite.cdbHandle = cdb.New() // create new cdb handle
+
+	testRecordsStr, testRecordsInt := generateTestRecords(2)
+
 	suite.testRecordsStr = testRecordsStr
 	suite.testRecordsInt = testRecordsInt
 
@@ -92,22 +96,31 @@ func (suite *OCTestSuite) TearDownTest() {
 	suite.Nilf(err, "Can't remove cdb file: %#v", err)
 }
 
+func fillTestCDB(writer cdb.Writer, testRecordsStr, testRecordsInt []testCDBRecord) error {
+
+	allTestRecords := []testCDBRecord{}
+	allTestRecords = append(allTestRecords, testRecordsInt...)
+	allTestRecords = append(allTestRecords, testRecordsStr...)
+	for _, rec := range allTestRecords {
+		// log.Printf("putting: key %s val %s", string(rec.key), string(rec.val))
+		err := writer.Put(rec.key, rec.val)
+		if err != nil {
+			return err
+		}
+	}
+	err := writer.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (suite *OCTestSuite) fillTestCDB() {
 
 	writer := suite.getCDBWriter()
-	defer func() {
-		err := writer.Close()
-		suite.Require().Nilf(err, "Can't close cdb writer: %#v", err)
-	}()
-
-	allTestRecords := []testCDBRecord{}
-	allTestRecords = append(allTestRecords, suite.testRecordsInt...)
-	allTestRecords = append(allTestRecords, suite.testRecordsStr...)
-	for _, rec := range allTestRecords {
-		log.Printf("putting: key %s val %s", string(rec.key), string(rec.val))
-		err := writer.Put(rec.key, rec.val)
-		suite.Require().Nilf(err, "Cant put new value to cdb: %#v", err)
-	}
+	err := fillTestCDB(writer, suite.testRecordsStr, suite.testRecordsInt)
+	suite.Nil(err)
+	suite.Require().Nilf(err, "Cant put new value to cdb: %#v", err)
 }
 
 func (suite *OCTestSuite) TestInt() {

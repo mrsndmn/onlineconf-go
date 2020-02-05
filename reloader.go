@@ -169,7 +169,7 @@ func (mr *ModuleReloader) startWatcher() error {
 func (mr *ModuleReloader) reload() error {
 	module, err := loadModuleFromFile(mr.ops.FilePath)
 	if err != nil {
-		log.Printf("Cant reload module %s: %#v", mr.ops.Name, err)
+		// log.Printf("Cant reload module %s: %#v", mr.ops.Name, err)
 		return errors.Wrap(err, "cant reload module")
 	}
 

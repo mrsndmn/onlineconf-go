@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/alldroll/cdb"
 	"github.com/pkg/errors"
@@ -64,10 +63,6 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 		return errors.Wrap(err, "cant get cdb iterator")
 	}
 
-	record := cdbIter.Record()
-	_, ks := record.Key()
-	log.Printf("1 rec: %d", ks)
-
 	for {
 		record := cdbIter.Record()
 		if record == nil {
@@ -90,7 +85,7 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 			return fmt.Errorf("Onlineconf value must contain at least 1 byte: `typeByte|ParamData`")
 		}
 
-		log.Printf("oc parsing: %s %s", string(key), string(val))
+		// log.Printf("oc parsing: %s %s", string(key), string(val))
 
 		// val's first byte defines datatype of config value
 		// onlineconf currently knows 's' and 'j' data types

@@ -2,7 +2,6 @@ package onlineconf
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -44,6 +43,6 @@ func TestInvalidCDB(t *testing.T) {
 	assert.Nilf(err, "error while creating broken cdb: %#v", err)
 
 	_, err = loadModuleFromFile(f.Name())
-	log.Printf("loadModuleFromFile err: %#v", err)
+	// log.Printf("loadModuleFromFile err: %#v", err)
 	assert.NotNil(err)
 }

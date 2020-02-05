@@ -2,7 +2,6 @@ package onlineconf
 
 import (
 	"encoding/json"
-	"log"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -10,11 +9,11 @@ import (
 
 func (m *Mod) parseSimpleParams(keyStr, valStr string) {
 	m.StringParams[keyStr] = valStr
-	log.Printf("str param: %s %s", keyStr, valStr)
+	// log.Printf("str param: %s %s", keyStr, valStr)
 
 	if intParam, err := strconv.Atoi(valStr); err == nil {
 		m.IntParams[keyStr] = intParam
-		log.Printf("int param: %s %d", keyStr, intParam)
+		// log.Printf("int param: %s %d", keyStr, intParam)
 	}
 	return
 }
