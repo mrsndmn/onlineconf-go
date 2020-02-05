@@ -32,7 +32,9 @@ type ModuleReloader struct {
 }
 
 // Module returns current copy of Module by name in default onlineconf module directory.
-// This module will never be updated
+// This module will never be updated.
+// This function parses all the parameters in onlineconf and copies it to memory.
+// Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
 func Module(moduleName string) (*Mod, error) {
 	mr, err := NewModuleReloader(&ReloaderOptions{Name: moduleName})
 	if err != nil {
@@ -41,10 +43,34 @@ func Module(moduleName string) (*Mod, error) {
 	return mr.Module(), err
 }
 
-// MustModule returns Module by name in default onlineconf module directory
-// panics on error
+// MustModule returns Module by name in default onlineconf module directory.
+// Panics on error.
+// This module will never be updated.
+// This function parses all the parameters in onlineconf and copies it to memory.
+// Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
 func MustModule(moduleName string) *Mod {
 	m, err := Module(moduleName)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+// Tree returns current copy of Module TREE in default onlineconf module directory.
+// This module will never be updated.
+// This function parses all the parameters in onlineconf and copies it to memory.
+// Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
+func Tree() (*Mod, error) {
+	return Module("TREE")
+}
+
+// MustTree returns Module TREE in default onlineconf module directory
+// Panics on error.
+// This module will never be updated.
+// This function parses all the parameters in onlineconf and copies it to memory.
+// Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
+func MustTree() *Mod {
+	m, err := Tree()
 	if err != nil {
 		panic(err)
 	}
