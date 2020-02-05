@@ -120,3 +120,16 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 
 	return nil
 }
+
+type ctxConfigModuleKey struct{}
+
+// WithContext returns a new Context that carries value module
+func (m *Mod) WithContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxConfigModuleKey{}, m)
+}
+
+// ModuleFromContext retrieves a config module from context.
+func ModuleFromContext(ctx context.Context) (*Mod, bool) {
+	m, ok := ctx.Value(ctxConfigModuleKey{}).(*Mod)
+	return m, ok
+}

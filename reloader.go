@@ -1,6 +1,7 @@
 package onlineconf
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"path"
@@ -176,4 +177,17 @@ func (mr *ModuleReloader) reload() error {
 	mr.module = module
 	mr.modMu.Unlock()
 	return nil
+}
+
+type ctxConfigModuleReloaderKey struct{}
+
+// WithContext returns a new Context that carries value module reloader
+func (mr *ModuleReloader) WithContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxConfigModuleReloaderKey{}, mr)
+}
+
+// ModuleReloaderFromContext retrieves a config module from context.
+func ModuleReloaderFromContext(ctx context.Context) (*ModuleReloader, bool) {
+	mr, ok := ctx.Value(ctxConfigModuleReloaderKey{}).(*ModuleReloader)
+	return mr, ok
 }
