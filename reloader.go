@@ -28,6 +28,7 @@ type ModuleReloader struct {
 	modMu          *sync.RWMutex // module mutex
 	ops            *ReloaderOptions
 	inotifyWatcher *fsnotify.Watcher
+	watherStop     chan struct{}
 }
 
 // NewModuleReloader creates new module reloader
@@ -42,8 +43,9 @@ func NewModuleReloader(ops *ReloaderOptions) (*ModuleReloader, error) {
 	}
 
 	mr := ModuleReloader{
-		ops:   ops,
-		modMu: &sync.RWMutex{},
+		ops:        ops,
+		modMu:      &sync.RWMutex{},
+		watherStop: make(chan struct{}),
 	}
 	err := mr.reload()
 	if err != nil {
@@ -60,6 +62,13 @@ func NewModuleReloader(ops *ReloaderOptions) (*ModuleReloader, error) {
 
 // Close closes inofitify watcher. Module will not be updated anymore.
 func (mr *ModuleReloader) Close() error {
+
+	defer func() {
+		mr.inotifyWatcher = nil
+	}()
+
+	mr.watherStop <- struct{}{}
+
 	return mr.inotifyWatcher.Close()
 }
 
@@ -72,6 +81,10 @@ func (mr *ModuleReloader) Module() *Module {
 
 func (mr *ModuleReloader) startWatcher() error {
 	var watcher *fsnotify.Watcher
+
+	if mr.inotifyWatcher != nil {
+		return fmt.Errorf("inotify watcher is already started")
+	}
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -96,6 +109,9 @@ func (mr *ModuleReloader) startWatcher() error {
 				if err != nil {
 					log.Printf("Watch %v error: %v\n", mr.ops.Dir, err)
 				}
+			case <-mr.watherStop:
+				log.Println("Stopping inotify watcher")
+				return
 			}
 		}
 	}()
