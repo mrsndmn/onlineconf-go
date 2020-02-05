@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (m *Module) parseSimpleParams(keyStr, valStr string) {
+func (m *Mod) parseSimpleParams(keyStr, valStr string) {
 	m.StringParams[keyStr] = valStr
 	log.Printf("str param: %s %s", keyStr, valStr)
 
@@ -19,7 +19,7 @@ func (m *Module) parseSimpleParams(keyStr, valStr string) {
 	return
 }
 
-func (m *Module) parseJSONParams(keyStr, valStr string) error {
+func (m *Mod) parseJSONParams(keyStr, valStr string) error {
 	m.RawJSONParams[keyStr] = valStr
 
 	byteVal := []byte(valStr)

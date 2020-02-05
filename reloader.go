@@ -24,11 +24,31 @@ type ReloaderOptions struct {
 
 // ModuleReloader watchers for module updates and reloads it
 type ModuleReloader struct {
-	module         *Module
+	module         *Mod
 	modMu          *sync.RWMutex // module mutex
 	ops            *ReloaderOptions
 	inotifyWatcher *fsnotify.Watcher
 	watherStop     chan struct{}
+}
+
+// Module returns current copy of Module by name in default onlineconf module directory.
+// This module will never be updated
+func Module(moduleName string) (*Mod, error) {
+	mr, err := NewModuleReloader(&ReloaderOptions{Name: moduleName})
+	if err != nil {
+		return nil, err
+	}
+	return mr.Module(), err
+}
+
+// MustModule returns Module by name in default onlineconf module directory
+// panics on error
+func MustModule(moduleName string) *Mod {
+	m, err := Module(moduleName)
+	if err != nil {
+		panic(err)
+	}
+	return m
 }
 
 // NewModuleReloader creates new module reloader
@@ -73,7 +93,7 @@ func (mr *ModuleReloader) Close() error {
 }
 
 // Module returns the last successfully updated version of module
-func (mr *ModuleReloader) Module() *Module {
+func (mr *ModuleReloader) Module() *Mod {
 	mr.modMu.RLock()
 	defer mr.modMu.RUnlock()
 	return mr.module

@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/mmap"
 )
 
-func loadModuleFromFile(filePath string) (*Module, error) {
+func loadModuleFromFile(filePath string) (*Mod, error) {
 	cdbFile, err := mmap.Open(filePath)
 	if err != nil {
 		return nil, err

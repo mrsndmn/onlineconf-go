@@ -12,8 +12,8 @@ import (
 // ErrInvalidCDB means that cdb is invalid
 var ErrInvalidCDB = errors.New("cdb is inconsistent")
 
-// Module is a structure that associated with onlineconf module file.
-type Module struct {
+// Mod is a structure that associated with onlineconf module file.
+type Mod struct {
 	StringParams map[string]string
 	IntParams    map[string]int
 
@@ -25,15 +25,16 @@ type Module struct {
 	MapStringStringParams       map[string]map[string]string
 }
 
-// NewModule parses cdb file and copies all content to local maps
-func NewModule(reader io.ReaderAt) (*Module, error) {
+// NewModule parses cdb file and copies all content to local maps.
+// Module returned by this method will never be updated
+func NewModule(reader io.ReaderAt) (*Mod, error) {
 
 	cdbReader, err := cdb.New().GetReader(reader)
 	if err != nil {
 		return nil, fmt.Errorf("Cant cant cdb reader for module: %w", err)
 	}
 
-	module := &Module{
+	module := &Mod{
 		StringParams: map[string]string{},
 		IntParams:    map[string]int{},
 
@@ -56,7 +57,7 @@ func NewModule(reader io.ReaderAt) (*Module, error) {
 	return module, nil
 }
 
-func (m *Module) fillParams(cdb cdb.Reader) error {
+func (m *Mod) fillParams(cdb cdb.Reader) error {
 	cdbIter, err := cdb.Iterator()
 	if err != nil {
 		return errors.Wrap(err, "cant get cdb iterator")
