@@ -1,7 +1,5 @@
 package onlineconf
 
-// todo копировать параметры-мапки перед тем, как отдать их наружу
-
 import "fmt"
 
 // String returns value of a named parameter from the module.
