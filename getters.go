@@ -1,5 +1,7 @@
 package onlineconf
 
+// todo копировать параметры-мапки перед тем, как отдать их наружу
+
 import "fmt"
 
 // String returns value of a named parameter from the module.
@@ -61,15 +63,22 @@ func (m *Module) MustInt(path string) int {
 }
 
 // MapInterfaceInterface
-//
-//
+// Interfaces will not be copied!
 func (m *Module) MapInterfaceInterface(path string) (map[interface{}]interface{}, bool) {
 	param, ok := m.MapInterfaceInterfaceParams[path]
+	if ok {
+		clone := make(map[interface{}]interface{}, len(param))
+		for k, v := range param {
+			clone[k] = v
+		}
+		return clone, ok
+	}
 	return param, ok
 }
 
+// MapInterfaceInterfaceWithDef default valur will not be copied!
 func (m *Module) MapInterfaceInterfaceWithDef(path string, defaultValue map[interface{}]interface{}) (map[interface{}]interface{}, bool) {
-	param, ok := m.MapInterfaceInterfaceParams[path]
+	param, ok := m.MapInterfaceInterface(path)
 	if !ok {
 		return defaultValue, ok
 	}
@@ -77,7 +86,7 @@ func (m *Module) MapInterfaceInterfaceWithDef(path string, defaultValue map[inte
 }
 
 func (m *Module) MustMapInterfaceInterface(path string) map[interface{}]interface{} {
-	param, ok := m.MapInterfaceInterfaceParams[path]
+	param, ok := m.MapInterfaceInterface(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
@@ -88,12 +97,20 @@ func (m *Module) MustMapInterfaceInterface(path string) map[interface{}]interfac
 //
 //
 func (m *Module) MapIntInt(path string) (map[int]int, bool) {
-	param, ok := m.MapIntIntParams[path]
+	param, ok := m.MapInterfaceInterface(path)
+	if ok {
+		clone := make(map[int]int, len(param))
+		for k, v := range param {
+			clone[k] = v
+		}
+		return clone, ok
+	}
 	return param, ok
 }
 
+// MapIntIntWithDef default valur will not be copied!
 func (m *Module) MapIntIntWithDef(path string, defaultValue map[int]int) (map[int]int, bool) {
-	param, ok := m.MapIntIntParams[path]
+	param, ok := m.MapIntInt(path)
 	if !ok {
 		return defaultValue, ok
 	}
@@ -101,7 +118,7 @@ func (m *Module) MapIntIntWithDef(path string, defaultValue map[int]int) (map[in
 }
 
 func (m *Module) MustMapIntInt(path string) map[int]int {
-	param, ok := m.MapIntIntParams[path]
+	param, ok := m.MapIntInt(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
@@ -113,11 +130,19 @@ func (m *Module) MustMapIntInt(path string) map[int]int {
 //
 func (m *Module) MapIntString(path string) (map[int]string, bool) {
 	param, ok := m.MapIntStringParams[path]
+	if ok {
+		clone := make(map[int]string, len(param))
+		for k, v := range param {
+			clone[k] = v
+		}
+		return clone, ok
+	}
 	return param, ok
 }
 
+// MapIntStringWithDef default valur will not be copied!
 func (m *Module) MapIntStringWithDef(path string, defaultValue map[int]string) (map[int]string, bool) {
-	param, ok := m.MapIntStringParams[path]
+	param, ok := m.MapIntString(path)
 	if !ok {
 		return defaultValue, ok
 	}
@@ -125,7 +150,7 @@ func (m *Module) MapIntStringWithDef(path string, defaultValue map[int]string) (
 }
 
 func (m *Module) MustMapIntString(path string) map[int]string {
-	param, ok := m.MapIntStringParams[path]
+	param, ok := m.MapIntString(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
@@ -137,19 +162,28 @@ func (m *Module) MustMapIntString(path string) map[int]string {
 //
 func (m *Module) MapStringInt(path string) (map[string]int, bool) {
 	param, ok := m.MapStringIntParams[path]
+	if ok {
+		clone := make(map[string]int, len(param))
+		for k, v := range param {
+			clone[k] = v
+		}
+		return clone, ok
+	}
 	return param, ok
 }
 
+// MapStringIntWithDef default valur will not be copied!
 func (m *Module) MapStringIntWithDef(path string, defaultValue map[string]int) (map[string]int, bool) {
-	param, ok := m.MapStringIntParams[path]
+	param, ok := m.MapStringInt(path)
 	if !ok {
 		return defaultValue, ok
 	}
 	return param, ok
 }
 
+//
 func (m *Module) MustMapStringInt(path string) map[string]int {
-	param, ok := m.MapStringIntParams[path]
+	param, ok := m.MapStringInt(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
@@ -161,11 +195,19 @@ func (m *Module) MustMapStringInt(path string) map[string]int {
 //
 func (m *Module) MapStringString(path string) (map[string]string, bool) {
 	param, ok := m.MapStringStringParams[path]
+	if ok {
+		clone := make(map[string]string, len(param))
+		for k, v := range param {
+			clone[k] = v
+		}
+		return clone, ok
+	}
 	return param, ok
 }
 
+// MapStringStringWithDef default valur will not be copied!
 func (m *Module) MapStringStringWithDef(path string, defaultValue map[string]string) (map[string]string, bool) {
-	param, ok := m.MapStringStringParams[path]
+	param, ok := m.MapStringString(path)
 	if !ok {
 		return defaultValue, ok
 	}
@@ -173,7 +215,7 @@ func (m *Module) MapStringStringWithDef(path string, defaultValue map[string]str
 }
 
 func (m *Module) MustMapStringString(path string) map[string]string {
-	param, ok := m.MapStringStringParams[path]
+	param, ok := m.MapStringString(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
