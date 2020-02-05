@@ -97,7 +97,7 @@ func (m *Module) MustMapInterfaceInterface(path string) map[interface{}]interfac
 //
 //
 func (m *Module) MapIntInt(path string) (map[int]int, bool) {
-	param, ok := m.MapInterfaceInterface(path)
+	param, ok := m.MapIntIntParams[path]
 	if ok {
 		clone := make(map[int]int, len(param))
 		for k, v := range param {
