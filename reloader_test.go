@@ -27,13 +27,12 @@ func createCDB() (*os.File, error) {
 		return nil, err
 	}
 
-	testRecordsStr, testRecordsInt := generateTestRecords(2)
+	testRecordsStr, testRecordsInt := generateTestRecords(100000)
 	err = fillTestCDB(writer, testRecordsStr, testRecordsInt)
 	return f, err
 }
 
 func BenchmarkModuleReload(t *testing.B) {
-
 	f, err := createCDB()
 	if err != nil {
 		panic(err)

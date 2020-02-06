@@ -8,5 +8,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a
-	golang.org/x/sys v0.0.0-20191002091554-b397fe3ad8ed // indirect
 )
+
+replace github.com/alldroll/cdb => github.com/mrsndmn/cdb v1.0.3-0.20200206115956-e959e50d19c9

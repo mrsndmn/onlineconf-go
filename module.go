@@ -69,15 +69,13 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 			break
 		}
 
-		keyReader, keySize := record.Key()
-		key := make([]byte, int(keySize))
-		if _, err = keyReader.Read(key); err != nil {
+		key, err := record.KeyBytes()
+		if err != nil {
 			return errors.Wrap(err, "cant read cdb key")
 		}
 
-		valReader, valSize := record.Value()
-		val := make([]byte, int(valSize))
-		if _, err = valReader.Read(val); err != nil {
+		val, err := record.ValueBytes()
+		if err != nil {
 			return errors.Wrap(err, "cant read cdb value")
 		}
 
@@ -107,7 +105,7 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 			break
 		}
 
-		_, err := cdbIter.Next()
+		_, err = cdbIter.Next()
 		if err != nil {
 			return errors.Wrap(err, "cant get next cdb record")
 		}
