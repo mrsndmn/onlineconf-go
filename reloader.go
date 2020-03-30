@@ -32,16 +32,36 @@ type ModuleReloader struct {
 	watherStop     chan struct{}
 }
 
-// Module returns current copy of Module by name in default onlineconf module directory.
-// This module will never be updated.
-// This function parses all the parameters in onlineconf and copies it to memory.
-// Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
-func Module(moduleName string) (*Mod, error) {
+// Reloader returns reloader for specified module
+func Reloader(moduleName string) (*ModuleReloader, error) {
 	mr, err := NewModuleReloader(&ReloaderOptions{Name: moduleName})
 	if err != nil {
 		return nil, err
 	}
-	return mr.Module(), err
+	return mr, nil
+}
+
+// MustReloader returns reloader for specified module. Panics on error.
+func MustReloader(moduleName string) (*ModuleReloader) {
+	mr, err := NewModuleReloader(&ReloaderOptions{Name: moduleName})
+	if err != nil {
+		panic(err)
+	}
+	return mr
+}
+
+// Module returns current copy of Module by name in default onlineconf module directory.
+// This function is STRONGLY NOT RECOMENDED FOR USE. It is very unefficient.
+// This module will never be updated.
+// This function parses all the parameters in onlineconf and copies it to memory.
+// Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
+func Module(moduleName string) (*Mod, error) {
+	mr, err := Reloader(moduleName)
+	if err != nil {
+		return nil, err
+	}
+
+	return mr.Module(), nil
 }
 
 // MustModule returns Module by name in default onlineconf module directory.
@@ -122,8 +142,9 @@ func (mr *ModuleReloader) Close() error {
 // Module returns the last successfully updated version of module
 func (mr *ModuleReloader) Module() *Mod {
 	mr.modMu.RLock()
+	mod := mr.module
 	defer mr.modMu.RUnlock()
-	return mr.module
+	return mod
 }
 
 func (mr *ModuleReloader) startWatcher() error {
