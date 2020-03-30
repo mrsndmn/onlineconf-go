@@ -13,7 +13,7 @@ module := reloader.Module()      // consistent and immutable copy of module para
 
 i, ok := module.Int("/path/to/int")                // i contains value and ok indicates if such key was in config
 i, ok := module.IntWithDef("/path/to/int", 100500) // i contains value but if no such key in config i will be set to 100500
-         module.MustInt("/path/to/int")            // panics if no such key in config
+         module.MustInt("/path/to/int")                     // panics if no such key in config
 
 // see also folowing methods
 // module.String*
