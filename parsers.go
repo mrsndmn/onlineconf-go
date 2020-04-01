@@ -2,9 +2,8 @@ package onlineconf
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 func (m *Mod) parseSimpleParams(keyStr, valStr string) {
@@ -18,17 +17,17 @@ func (m *Mod) parseSimpleParams(keyStr, valStr string) {
 	return
 }
 
-func (m *Mod) parseJSONParams(keyStr, valStr string) error {
+func (m *Mod) parseJSONObjectParams(keyStr, valStr string) error {
 	m.RawJSONParams[keyStr] = valStr
 
 	byteVal := []byte(valStr)
 
-	mapInterfaceInterface := make(map[interface{}]interface{})
-	err := json.Unmarshal(byteVal, &mapInterfaceInterface)
+	mapStringInterface := make(map[string]interface{})
+	err := json.Unmarshal(byteVal, &mapStringInterface)
 	if err != nil {
-		return errors.Wrapf(err, "invalid json in parameter %s", keyStr)
+		return nil
 	}
-	m.MapInterfaceInterfaceParams[keyStr] = mapInterfaceInterface
+	m.JSONObjectParams[keyStr] = mapStringInterface
 
 	mapStrStr := make(map[string]string)
 	err = json.Unmarshal(byteVal, &mapStrStr)
@@ -60,5 +59,35 @@ func (m *Mod) parseJSONParams(keyStr, valStr string) error {
 	m.MapIntStringParams[keyStr] = mapIntStr
 	m.MapStringIntParams[keyStr] = mapStrInt
 	m.MapStringStringParams[keyStr] = mapStrStr
+	return nil
+}
+
+func (m *Mod) parseJSONArrayParams(keyStr, valStr string) error {
+	m.RawJSONParams[keyStr] = valStr
+
+	fmt.Printf("valstr %s", valStr)
+	byteVal := []byte(valStr)
+
+	mapInterfaceSlice := make([]interface{}, 0)
+	err := json.Unmarshal(byteVal, &mapInterfaceSlice)
+	if err != nil {
+		return nil
+	}
+	m.JSONArrayParams[keyStr] = mapInterfaceSlice
+
+	strSlice := make([]string, 0)
+	err = json.Unmarshal(byteVal, &strSlice)
+	if err != nil {
+		return nil
+	}
+	m.SliceStringParams[keyStr] = strSlice
+
+	intSlice := make([]int, 0)
+	err = json.Unmarshal(byteVal, &intSlice)
+	if err != nil {
+		return nil
+	}
+	m.SliceIntParams[keyStr] = intSlice
+
 	return nil
 }

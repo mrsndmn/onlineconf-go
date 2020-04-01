@@ -17,12 +17,15 @@ type Mod struct {
 	StringParams map[string]string
 	IntParams    map[string]int
 
-	RawJSONParams               map[string]string // Here will be all JSON params (not parsed)
-	MapInterfaceInterfaceParams map[string]map[interface{}]interface{}
-	MapIntIntParams             map[string]map[int]int
-	MapIntStringParams          map[string]map[int]string
-	MapStringIntParams          map[string]map[string]int
-	MapStringStringParams       map[string]map[string]string
+	RawJSONParams         map[string]string // Here will be all JSON params (not parsed)
+	JSONObjectParams      map[string]map[string]interface{}
+	MapIntIntParams       map[string]map[int]int
+	MapIntStringParams    map[string]map[int]string
+	MapStringIntParams    map[string]map[string]int
+	MapStringStringParams map[string]map[string]string
+	JSONArrayParams       map[string][]interface{}
+	SliceStringParams     map[string][]string
+	SliceIntParams        map[string][]int
 }
 
 // NewModule parses cdb file and copies all content to local maps.
@@ -38,12 +41,15 @@ func NewModule(reader io.ReaderAt) (*Mod, error) {
 		StringParams: map[string]string{},
 		IntParams:    map[string]int{},
 
-		RawJSONParams:               map[string]string{},
-		MapInterfaceInterfaceParams: map[string]map[interface{}]interface{}{},
-		MapIntIntParams:             map[string]map[int]int{},
-		MapIntStringParams:          map[string]map[int]string{},
-		MapStringIntParams:          map[string]map[string]int{},
-		MapStringStringParams:       map[string]map[string]string{},
+		RawJSONParams:         map[string]string{},
+		JSONObjectParams:      map[string]map[string]interface{}{},
+		MapIntIntParams:       map[string]map[int]int{},
+		MapIntStringParams:    map[string]map[int]string{},
+		MapStringIntParams:    map[string]map[string]int{},
+		MapStringStringParams: map[string]map[string]string{},
+		JSONArrayParams:       map[string][]interface{}{},
+		SliceStringParams:     map[string][]string{},
+		SliceIntParams:        map[string][]int{},
 	}
 
 	// todo подумать, как будут обновляться модули
@@ -93,9 +99,15 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 		if paramTypeByte == 's' { // params type string
 			m.parseSimpleParams(keyStr, valStr)
 		} else if paramTypeByte == 'j' { // params type JSON
-			err := m.parseJSONParams(keyStr, valStr)
+
+			// todo сделать парсинг json параметров опциональным
+			err := m.parseJSONObjectParams(keyStr, valStr)
 			if err != nil {
-				return err
+				arrayerr := m.parseJSONArrayParams(keyStr, valStr)
+				if arrayerr != nil {
+					return fmt.Errorf("Cant parse json. It is neither array nor json object: %#v %#v", err, arrayerr)
+				}
+
 			}
 		} else {
 			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, keyStr)

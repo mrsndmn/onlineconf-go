@@ -46,3 +46,8 @@ func TestInvalidCDB(t *testing.T) {
 	// log.Printf("loadModuleFromFile err: %#v", err)
 	assert.NotNil(err)
 }
+
+func TestTree(t *testing.T) {
+	tree := MustReloader("TREE")
+	tree.Module().Bool("/moosic")
+}
