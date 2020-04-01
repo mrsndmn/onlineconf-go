@@ -60,6 +60,36 @@ func (m *Mod) MustInt(path string) int {
 	return param
 }
 
+// Bool returns bool interpretation of param.
+// If length of string parameter with same path is greater than 0,
+// returns true. In other case false.
+func (m *Mod) Bool(path string) (bool, bool) {
+	param, ok := m.String(path)
+	if !ok {
+		return false, false
+	}
+	return (len(param) > 0), ok
+}
+
+// BoolWithDef the same as Bool but is no such parameter? it returns default value
+func (m *Mod) BoolWithDef(path string, defaultValue bool) (bool, bool) {
+	param, ok := m.Bool(path)
+	if !ok {
+		return defaultValue, false
+	}
+	return param, ok
+}
+
+// MustBool returns value of a named parameter from the module.
+// It panics if no such parameter or this parameter is not a string.
+func (m *Mod) MustBool(path string) bool {
+	param, ok := m.Bool(path)
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
 // MapInterfaceInterface
 // Interfaces will not be copied!
 func (m *Mod) MapInterfaceInterface(path string) (map[interface{}]interface{}, bool) {
