@@ -28,16 +28,8 @@ type Mod struct {
 	SliceIntParams        map[string][]int
 }
 
-// NewModule parses cdb file and copies all content to local maps.
-// Module returned by this method will never be updated
-func NewModule(reader io.ReaderAt) (*Mod, error) {
-
-	cdbReader, err := cdb.New().GetReader(reader)
-	if err != nil {
-		return nil, fmt.Errorf("Cant cant cdb reader for module: %w", err)
-	}
-
-	module := &Mod{
+func newEmptyModule() *Mod {
+	return &Mod{
 		StringParams: map[string]string{},
 		IntParams:    map[string]int{},
 
@@ -51,6 +43,18 @@ func NewModule(reader io.ReaderAt) (*Mod, error) {
 		SliceStringParams:     map[string][]string{},
 		SliceIntParams:        map[string][]int{},
 	}
+}
+
+// NewModule parses cdb file and copies all content to local maps.
+// Module returned by this method will never be updated
+func NewModule(reader io.ReaderAt) (*Mod, error) {
+
+	cdbReader, err := cdb.New().GetReader(reader)
+	if err != nil {
+		return nil, fmt.Errorf("Cant cant cdb reader for module: %w", err)
+	}
+
+	module := newEmptyModule()
 
 	// todo подумать, как будут обновляться модули
 	// кажется, что горутинка при обновлении файлика должна
@@ -134,7 +138,11 @@ func (m *Mod) WithContext(ctx context.Context) context.Context {
 }
 
 // ModuleFromContext retrieves a config module from context.
-func ModuleFromContext(ctx context.Context) (*Mod, bool) {
+// Returns empty module if context has no ctxConfigModuleKey
+func ModuleFromContext(ctx context.Context) *Mod {
 	m, ok := ctx.Value(ctxConfigModuleKey{}).(*Mod)
-	return m, ok
+	if !ok {
+		return newEmptyModule()
+	}
+	return m
 }
