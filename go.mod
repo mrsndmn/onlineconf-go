@@ -1,4 +1,4 @@
-module github.com/onlineconf/onlineconf-go
+module github.com/mrsndmn/onlineconf-go
 
 go 1.8
 
