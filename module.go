@@ -46,10 +46,6 @@ func NewModule(reader io.ReaderAt) (*Mod, error) {
 		MapStringStringParams:       map[string]map[string]string{},
 	}
 
-	// todo подумать, как будут обновляться модули
-	// кажется, что горутинка при обновлении файлика должна
-	// генерить новый модуль и отдавать ссылку нна него по запросу
-	// пока файлик не обновится еще раз
 	err = module.fillParams(cdbReader)
 	if err != nil {
 		return nil, err
@@ -90,6 +86,8 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 		paramTypeByte := val[0]
 		keyStr := string(key)
 		valStr := string(val[1:])
+		// такого треша, конечно же, не было бы, если бы в онлайнконфе
+		// была бы типизация
 		if paramTypeByte == 's' { // params type string
 			m.parseSimpleParams(keyStr, valStr)
 		} else if paramTypeByte == 'j' { // params type JSON
