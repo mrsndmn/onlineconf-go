@@ -3,8 +3,6 @@ package onlineconf
 import (
 	"encoding/json"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 func (m *Mod) parseSimpleParams(keyStr, valStr string) {

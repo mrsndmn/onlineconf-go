@@ -250,7 +250,6 @@ func (m *Mod) MustMapStringString(path string) map[string]string {
 	return param
 }
 
-
 // RawJSON returns raw json string
 func (m *Mod) RawJSON(path string) (string, bool) {
 	param, ok := m.RawJSONParams[path]
@@ -276,6 +275,3 @@ func (m *Mod) MustRawJSON(path string) string {
 	}
 	return param
 }
-
-
-
