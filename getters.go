@@ -249,3 +249,33 @@ func (m *Mod) MustMapStringString(path string) map[string]string {
 	}
 	return param
 }
+
+
+// RawJSON returns raw json string
+func (m *Mod) RawJSON(path string) (string, bool) {
+	param, ok := m.RawJSONParams[path]
+	if ok {
+		return param, ok
+	}
+	return param, ok
+}
+
+// RawJSONWithDef default valur will not be copied!
+func (m *Mod) RawJSONWithDef(path string, defaultValue string) (string, bool) {
+	param, ok := m.RawJSON(path)
+	if !ok {
+		return defaultValue, ok
+	}
+	return param, ok
+}
+
+func (m *Mod) MustRawJSON(path string) string {
+	param, ok := m.RawJSON(path)
+	if !ok {
+		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
+	}
+	return param
+}
+
+
+

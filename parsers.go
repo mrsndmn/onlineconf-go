@@ -26,7 +26,8 @@ func (m *Mod) parseJSONParams(keyStr, valStr string) error {
 	MapStringInterface := make(map[string]interface{})
 	err := json.Unmarshal(byteVal, &MapStringInterface)
 	if err != nil {
-		return errors.Wrapf(err, "invalid json in parameter %s (value %s)", keyStr, valStr)
+		// то скорее всего, это массив. Парсите сами!
+		return nil
 	}
 	m.MapStringInterfaceParams[keyStr] = MapStringInterface
 
