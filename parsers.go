@@ -23,12 +23,12 @@ func (m *Mod) parseJSONParams(keyStr, valStr string) error {
 
 	byteVal := []byte(valStr)
 
-	mapInterfaceInterface := make(map[interface{}]interface{})
-	err := json.Unmarshal(byteVal, &mapInterfaceInterface)
+	MapStringInterface := make(map[string]interface{})
+	err := json.Unmarshal(byteVal, &MapStringInterface)
 	if err != nil {
 		return errors.Wrapf(err, "invalid json in parameter %s (value %s)", keyStr, valStr)
 	}
-	m.MapInterfaceInterfaceParams[keyStr] = mapInterfaceInterface
+	m.MapStringInterfaceParams[keyStr] = MapStringInterface
 
 	mapStrStr := make(map[string]string)
 	err = json.Unmarshal(byteVal, &mapStrStr)

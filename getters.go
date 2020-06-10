@@ -90,12 +90,12 @@ func (m *Mod) MustBool(path string) bool {
 	return param
 }
 
-// MapInterfaceInterface
+// MapStringInterface
 // Interfaces will not be copied!
-func (m *Mod) MapInterfaceInterface(path string) (map[interface{}]interface{}, bool) {
-	param, ok := m.MapInterfaceInterfaceParams[path]
+func (m *Mod) MapStringInterface(path string) (map[string]interface{}, bool) {
+	param, ok := m.MapStringInterfaceParams[path]
 	if ok {
-		clone := make(map[interface{}]interface{}, len(param))
+		clone := make(map[string]interface{}, len(param))
 		for k, v := range param {
 			clone[k] = v
 		}
@@ -104,17 +104,17 @@ func (m *Mod) MapInterfaceInterface(path string) (map[interface{}]interface{}, b
 	return param, ok
 }
 
-// MapInterfaceInterfaceWithDef default valur will not be copied!
-func (m *Mod) MapInterfaceInterfaceWithDef(path string, defaultValue map[interface{}]interface{}) (map[interface{}]interface{}, bool) {
-	param, ok := m.MapInterfaceInterface(path)
+// MapStringInterfaceWithDef default valur will not be copied!
+func (m *Mod) MapStringInterfaceWithDef(path string, defaultValue map[string]interface{}) (map[string]interface{}, bool) {
+	param, ok := m.MapStringInterface(path)
 	if !ok {
 		return defaultValue, ok
 	}
 	return param, ok
 }
 
-func (m *Mod) MustMapInterfaceInterface(path string) map[interface{}]interface{} {
-	param, ok := m.MapInterfaceInterface(path)
+func (m *Mod) MustMapStringInterface(path string) map[string]interface{} {
+	param, ok := m.MapStringInterface(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
 	}
