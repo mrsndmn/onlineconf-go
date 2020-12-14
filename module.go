@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"io"
 
+	"errors"
+
 	"github.com/alldroll/cdb"
-	"github.com/pkg/errors"
 )
 
 // ErrInvalidCDB means that cdb is invalid
 var ErrInvalidCDB = errors.New("cdb is inconsistent")
 
-// Mod is a structure that associated with onlineconf module file.
-type Mod struct {
+// Module is a structure that associated with onlineconf module file.
+type Module struct {
 	StringParams map[string]string
 	IntParams    map[string]int
 
@@ -27,14 +28,14 @@ type Mod struct {
 
 // NewModule parses cdb file and copies all content to local maps.
 // Module returned by this method will never be updated
-func NewModule(reader io.ReaderAt) (*Mod, error) {
+func NewModule(reader io.ReaderAt) (*Module, error) {
 
 	cdbReader, err := cdb.New().GetReader(reader)
 	if err != nil {
 		return nil, fmt.Errorf("Cant cant cdb reader for module: %w", err)
 	}
 
-	module := &Mod{
+	module := &Module{
 		StringParams: map[string]string{},
 		IntParams:    map[string]int{},
 
@@ -53,10 +54,10 @@ func NewModule(reader io.ReaderAt) (*Mod, error) {
 	return module, nil
 }
 
-func (m *Mod) fillParams(cdb cdb.Reader) error {
+func (m *Module) fillParams(cdb cdb.Reader) error {
 	cdbIter, err := cdb.Iterator()
 	if err != nil {
-		return errors.Wrap(err, "cant get cdb iterator")
+		return fmt.Errorf("can't get cdb iterator: %w", err)
 	}
 
 	for {
@@ -67,12 +68,12 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 
 		key, err := record.KeyBytes()
 		if err != nil {
-			return errors.Wrap(err, "cant read cdb key")
+			return fmt.Errorf("can't read cdb key", err)
 		}
 
 		val, err := record.ValueBytes()
 		if err != nil {
-			return errors.Wrap(err, "cant read cdb value")
+			return fmt.Errorf("can't read cdb value", err)
 		}
 
 		if len(val) < 1 {
@@ -105,7 +106,7 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 
 		_, err = cdbIter.Next()
 		if err != nil {
-			return errors.Wrap(err, "cant get next cdb record")
+			return fmt.Errorf("can't get next cdb record: %w", err)
 		}
 	}
 
@@ -115,12 +116,12 @@ func (m *Mod) fillParams(cdb cdb.Reader) error {
 type ctxConfigModuleKey struct{}
 
 // WithContext returns a new Context that carries value module
-func (m *Mod) WithContext(ctx context.Context) context.Context {
+func (m *Module) WithContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxConfigModuleKey{}, m)
 }
 
 // ModuleFromContext retrieves a config module from context.
-func ModuleFromContext(ctx context.Context) (*Mod, bool) {
-	m, ok := ctx.Value(ctxConfigModuleKey{}).(*Mod)
+func ModuleFromContext(ctx context.Context) (*Module, bool) {
+	m, ok := ctx.Value(ctxConfigModuleKey{}).(*Module)
 	return m, ok
 }

@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
 )
 
 // DefaultModulesDir defines default directory for modules
@@ -25,7 +24,7 @@ type ReloaderOptions struct {
 
 // ModuleReloader watchers for module updates and reloads it
 type ModuleReloader struct {
-	module         *Mod
+	module         *Module
 	modMu          *sync.RWMutex // module mutex
 	ops            *ReloaderOptions
 	inotifyWatcher *fsnotify.Watcher
@@ -42,7 +41,7 @@ func Reloader(moduleName string) (*ModuleReloader, error) {
 }
 
 // MustReloader returns reloader for specified module. Panics on error.
-func MustReloader(moduleName string) (*ModuleReloader) {
+func MustReloader(moduleName string) *ModuleReloader {
 	mr, err := NewModuleReloader(&ReloaderOptions{Name: moduleName})
 	if err != nil {
 		panic(err)
@@ -50,12 +49,12 @@ func MustReloader(moduleName string) (*ModuleReloader) {
 	return mr
 }
 
-// Module returns current copy of Module by name in default onlineconf module directory.
+// GetModule returns current copy of Module by name in default onlineconf module directory.
 // This function is STRONGLY NOT RECOMENDED FOR USE. It is very unefficient.
 // This module will never be updated.
 // This function parses all the parameters in onlineconf and copies it to memory.
 // Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
-func Module(moduleName string) (*Mod, error) {
+func GetModule(moduleName string) (*Module, error) {
 	mr, err := Reloader(moduleName)
 	if err != nil {
 		return nil, err
@@ -69,8 +68,8 @@ func Module(moduleName string) (*Mod, error) {
 // This module will never be updated.
 // This function parses all the parameters in onlineconf and copies it to memory.
 // Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
-func MustModule(moduleName string) *Mod {
-	m, err := Module(moduleName)
+func MustModule(moduleName string) *Module {
+	m, err := GetModule(moduleName)
 	if err != nil {
 		panic(err)
 	}
@@ -81,8 +80,8 @@ func MustModule(moduleName string) *Mod {
 // This module will never be updated.
 // This function parses all the parameters in onlineconf and copies it to memory.
 // Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
-func Tree() (*Mod, error) {
-	return Module("TREE")
+func Tree() (*Module, error) {
+	return GetModule("TREE")
 }
 
 // MustTree returns Module TREE in default onlineconf module directory
@@ -90,7 +89,7 @@ func Tree() (*Mod, error) {
 // This module will never be updated.
 // This function parses all the parameters in onlineconf and copies it to memory.
 // Thats why this operations is expencive. You should prefer to use ModuleReloader if its possible.
-func MustTree() *Mod {
+func MustTree() *Module {
 	m, err := Tree()
 	if err != nil {
 		panic(err)
@@ -140,7 +139,7 @@ func (mr *ModuleReloader) Close() error {
 }
 
 // Module returns the last successfully updated version of module
-func (mr *ModuleReloader) Module() *Mod {
+func (mr *ModuleReloader) Module() *Module {
 	mr.modMu.RLock()
 	mod := mr.module
 	defer mr.modMu.RUnlock()
@@ -191,7 +190,7 @@ func (mr *ModuleReloader) reload() error {
 	module, err := loadModuleFromFile(mr.ops.FilePath)
 	if err != nil {
 		// log.Printf("Cant reload module %s: %#v", mr.ops.Name, err)
-		return errors.Wrap(err, "cant reload module")
+		return fmt.Errorf("can't reload module: %w", err)
 	}
 
 	mr.modMu.Lock()

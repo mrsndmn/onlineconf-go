@@ -5,7 +5,7 @@ import "fmt"
 // String returns value of a named parameter from the module.
 // It returns the boolean true if the parameter exists and is a string.
 // In the other case it returns the boolean false and an empty string.
-func (m *Mod) String(path string) (string, bool) {
+func (m *Module) String(path string) (string, bool) {
 	param, ok := m.StringParams[path]
 	return param, ok
 }
@@ -13,7 +13,7 @@ func (m *Mod) String(path string) (string, bool) {
 // StringWithDef returns value of a named parameter from the module.
 // It returns the boolean true if the parameter exists and is a string.
 // In the other case it returns the boolean false and an empty string.
-func (m *Mod) StringWithDef(path string, defaultValue string) (string, bool) {
+func (m *Module) StringWithDef(path string, defaultValue string) (string, bool) {
 	param, ok := m.StringParams[path]
 	if !ok {
 		return defaultValue, ok
@@ -23,7 +23,7 @@ func (m *Mod) StringWithDef(path string, defaultValue string) (string, bool) {
 
 // MustString returns value of a named parameter from the module.
 // It panics if no such parameter or this parameter is not a string.
-func (m *Mod) MustString(path string) string {
+func (m *Module) MustString(path string) string {
 	param, ok := m.StringParams[path]
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -34,7 +34,7 @@ func (m *Mod) MustString(path string) string {
 // Int returns value of a named parameter from the module.
 // It returns the boolean true if the parameter exists and is an int.
 // In the other case it returns the boolean false and zero.
-func (m *Mod) Int(path string) (int, bool) {
+func (m *Module) Int(path string) (int, bool) {
 	param, ok := m.IntParams[path]
 	return param, ok
 }
@@ -42,7 +42,7 @@ func (m *Mod) Int(path string) (int, bool) {
 // IntWithDef returns value of a named parameter from the module.
 // It returns the boolean true if the parameter exists and is an int.
 // In the other case it returns the boolean false and zero.
-func (m *Mod) IntWithDef(path string, defaultValue int) (int, bool) {
+func (m *Module) IntWithDef(path string, defaultValue int) (int, bool) {
 	param, ok := m.IntParams[path]
 	if !ok {
 		return defaultValue, ok
@@ -52,7 +52,7 @@ func (m *Mod) IntWithDef(path string, defaultValue int) (int, bool) {
 
 // MustInt returns value of a named parameter from the module.
 // It panics if no such parameter or this parameter is not an int
-func (m *Mod) MustInt(path string) int {
+func (m *Module) MustInt(path string) int {
 	param, ok := m.IntParams[path]
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -63,7 +63,7 @@ func (m *Mod) MustInt(path string) int {
 // Bool returns bool interpretation of param.
 // If length of string parameter with same path is greater than 0,
 // returns true. In other case false.
-func (m *Mod) Bool(path string) (bool, bool) {
+func (m *Module) Bool(path string) (bool, bool) {
 	param, ok := m.String(path)
 	if !ok {
 		return false, false
@@ -72,7 +72,7 @@ func (m *Mod) Bool(path string) (bool, bool) {
 }
 
 // BoolWithDef the same as Bool but is no such parameter? it returns default value
-func (m *Mod) BoolWithDef(path string, defaultValue bool) (bool, bool) {
+func (m *Module) BoolWithDef(path string, defaultValue bool) (bool, bool) {
 	param, ok := m.Bool(path)
 	if !ok {
 		return defaultValue, false
@@ -82,7 +82,7 @@ func (m *Mod) BoolWithDef(path string, defaultValue bool) (bool, bool) {
 
 // MustBool returns value of a named parameter from the module.
 // It panics if no such parameter or this parameter is not a string.
-func (m *Mod) MustBool(path string) bool {
+func (m *Module) MustBool(path string) bool {
 	param, ok := m.Bool(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -92,7 +92,7 @@ func (m *Mod) MustBool(path string) bool {
 
 // MapStringInterface
 // Interfaces will not be copied!
-func (m *Mod) MapStringInterface(path string) (map[string]interface{}, bool) {
+func (m *Module) MapStringInterface(path string) (map[string]interface{}, bool) {
 	param, ok := m.MapStringInterfaceParams[path]
 	if ok {
 		clone := make(map[string]interface{}, len(param))
@@ -105,7 +105,7 @@ func (m *Mod) MapStringInterface(path string) (map[string]interface{}, bool) {
 }
 
 // MapStringInterfaceWithDef default valur will not be copied!
-func (m *Mod) MapStringInterfaceWithDef(path string, defaultValue map[string]interface{}) (map[string]interface{}, bool) {
+func (m *Module) MapStringInterfaceWithDef(path string, defaultValue map[string]interface{}) (map[string]interface{}, bool) {
 	param, ok := m.MapStringInterface(path)
 	if !ok {
 		return defaultValue, ok
@@ -113,7 +113,7 @@ func (m *Mod) MapStringInterfaceWithDef(path string, defaultValue map[string]int
 	return param, ok
 }
 
-func (m *Mod) MustMapStringInterface(path string) map[string]interface{} {
+func (m *Module) MustMapStringInterface(path string) map[string]interface{} {
 	param, ok := m.MapStringInterface(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -124,7 +124,7 @@ func (m *Mod) MustMapStringInterface(path string) map[string]interface{} {
 // MapIntInt
 //
 //
-func (m *Mod) MapIntInt(path string) (map[int]int, bool) {
+func (m *Module) MapIntInt(path string) (map[int]int, bool) {
 	param, ok := m.MapIntIntParams[path]
 	if ok {
 		clone := make(map[int]int, len(param))
@@ -137,7 +137,7 @@ func (m *Mod) MapIntInt(path string) (map[int]int, bool) {
 }
 
 // MapIntIntWithDef default valur will not be copied!
-func (m *Mod) MapIntIntWithDef(path string, defaultValue map[int]int) (map[int]int, bool) {
+func (m *Module) MapIntIntWithDef(path string, defaultValue map[int]int) (map[int]int, bool) {
 	param, ok := m.MapIntInt(path)
 	if !ok {
 		return defaultValue, ok
@@ -145,7 +145,7 @@ func (m *Mod) MapIntIntWithDef(path string, defaultValue map[int]int) (map[int]i
 	return param, ok
 }
 
-func (m *Mod) MustMapIntInt(path string) map[int]int {
+func (m *Module) MustMapIntInt(path string) map[int]int {
 	param, ok := m.MapIntInt(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -156,7 +156,7 @@ func (m *Mod) MustMapIntInt(path string) map[int]int {
 // MapIntString
 //
 //
-func (m *Mod) MapIntString(path string) (map[int]string, bool) {
+func (m *Module) MapIntString(path string) (map[int]string, bool) {
 	param, ok := m.MapIntStringParams[path]
 	if ok {
 		clone := make(map[int]string, len(param))
@@ -169,7 +169,7 @@ func (m *Mod) MapIntString(path string) (map[int]string, bool) {
 }
 
 // MapIntStringWithDef default valur will not be copied!
-func (m *Mod) MapIntStringWithDef(path string, defaultValue map[int]string) (map[int]string, bool) {
+func (m *Module) MapIntStringWithDef(path string, defaultValue map[int]string) (map[int]string, bool) {
 	param, ok := m.MapIntString(path)
 	if !ok {
 		return defaultValue, ok
@@ -177,7 +177,7 @@ func (m *Mod) MapIntStringWithDef(path string, defaultValue map[int]string) (map
 	return param, ok
 }
 
-func (m *Mod) MustMapIntString(path string) map[int]string {
+func (m *Module) MustMapIntString(path string) map[int]string {
 	param, ok := m.MapIntString(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -188,7 +188,7 @@ func (m *Mod) MustMapIntString(path string) map[int]string {
 // MapStringInt
 //
 //
-func (m *Mod) MapStringInt(path string) (map[string]int, bool) {
+func (m *Module) MapStringInt(path string) (map[string]int, bool) {
 	param, ok := m.MapStringIntParams[path]
 	if ok {
 		clone := make(map[string]int, len(param))
@@ -201,7 +201,7 @@ func (m *Mod) MapStringInt(path string) (map[string]int, bool) {
 }
 
 // MapStringIntWithDef default valur will not be copied!
-func (m *Mod) MapStringIntWithDef(path string, defaultValue map[string]int) (map[string]int, bool) {
+func (m *Module) MapStringIntWithDef(path string, defaultValue map[string]int) (map[string]int, bool) {
 	param, ok := m.MapStringInt(path)
 	if !ok {
 		return defaultValue, ok
@@ -210,7 +210,7 @@ func (m *Mod) MapStringIntWithDef(path string, defaultValue map[string]int) (map
 }
 
 //
-func (m *Mod) MustMapStringInt(path string) map[string]int {
+func (m *Module) MustMapStringInt(path string) map[string]int {
 	param, ok := m.MapStringInt(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -221,7 +221,7 @@ func (m *Mod) MustMapStringInt(path string) map[string]int {
 // MapStringString
 //
 //
-func (m *Mod) MapStringString(path string) (map[string]string, bool) {
+func (m *Module) MapStringString(path string) (map[string]string, bool) {
 	param, ok := m.MapStringStringParams[path]
 	if ok {
 		clone := make(map[string]string, len(param))
@@ -234,7 +234,7 @@ func (m *Mod) MapStringString(path string) (map[string]string, bool) {
 }
 
 // MapStringStringWithDef default valur will not be copied!
-func (m *Mod) MapStringStringWithDef(path string, defaultValue map[string]string) (map[string]string, bool) {
+func (m *Module) MapStringStringWithDef(path string, defaultValue map[string]string) (map[string]string, bool) {
 	param, ok := m.MapStringString(path)
 	if !ok {
 		return defaultValue, ok
@@ -242,7 +242,7 @@ func (m *Mod) MapStringStringWithDef(path string, defaultValue map[string]string
 	return param, ok
 }
 
-func (m *Mod) MustMapStringString(path string) map[string]string {
+func (m *Module) MustMapStringString(path string) map[string]string {
 	param, ok := m.MapStringString(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
@@ -251,7 +251,7 @@ func (m *Mod) MustMapStringString(path string) map[string]string {
 }
 
 // RawJSON returns raw json string
-func (m *Mod) RawJSON(path string) (string, bool) {
+func (m *Module) RawJSON(path string) (string, bool) {
 	param, ok := m.RawJSONParams[path]
 	if ok {
 		return param, ok
@@ -260,7 +260,7 @@ func (m *Mod) RawJSON(path string) (string, bool) {
 }
 
 // RawJSONWithDef default valur will not be copied!
-func (m *Mod) RawJSONWithDef(path string, defaultValue string) (string, bool) {
+func (m *Module) RawJSONWithDef(path string, defaultValue string) (string, bool) {
 	param, ok := m.RawJSON(path)
 	if !ok {
 		return defaultValue, ok
@@ -268,7 +268,7 @@ func (m *Mod) RawJSONWithDef(path string, defaultValue string) (string, bool) {
 	return param, ok
 }
 
-func (m *Mod) MustRawJSON(path string) string {
+func (m *Module) MustRawJSON(path string) string {
 	param, ok := m.RawJSON(path)
 	if !ok {
 		panic(fmt.Errorf("Missing required parameter in onlineconf or cant parse it %s", path))
