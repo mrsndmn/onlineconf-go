@@ -68,16 +68,16 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 
 		key, err := record.KeyBytes()
 		if err != nil {
-			return fmt.Errorf("can't read cdb key", err)
+			return fmt.Errorf("can't read cdb key: %w", err)
 		}
 
 		val, err := record.ValueBytes()
 		if err != nil {
-			return fmt.Errorf("can't read cdb value", err)
+			return fmt.Errorf("can't read cdb value: %w", err)
 		}
 
 		if len(val) < 1 {
-			return fmt.Errorf("Onlineconf value must contain at least 1 byte: `typeByte|ParamData`")
+			return fmt.Errorf("onlineconf value must contain at least 1 byte: `typeByte|ParamData`")
 		}
 
 		// log.Printf("oc parsing: %s %s", string(key), string(val))
@@ -97,7 +97,7 @@ func (m *Module) fillParams(cdb cdb.Reader) error {
 				return err
 			}
 		} else {
-			return fmt.Errorf("Unknown paramTypeByte: %#v for key %s", paramTypeByte, keyStr)
+			return fmt.Errorf("unknown paramTypeByte: %#v for key %s", paramTypeByte, keyStr)
 		}
 
 		if !cdbIter.HasNext() {
