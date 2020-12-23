@@ -5,15 +5,18 @@
 package onlineconf
 
 import (
-	"golang.org/x/exp/mmap"
+	"os"
+
+	"github.com/grandecola/mmap"
 )
 
 func loadModuleFromFile(filePath string) (*Module, error) {
-	cdbFile, err := mmap.Open(filePath)
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0)
+	cdbFile, err := mmap.NewSharedFileMmap(file, 0, -1, 0)
 	if err != nil {
 		return nil, err
 	}
-	defer cdbFile.Close()
+	// defer file.Close()
 
 	module, err := NewModule(cdbFile)
 	if err != nil {

@@ -19,3 +19,70 @@ module.MustInt("/path/to/int")                     // panics if no such key in c
 // module.String*
 // module.Map*
 ```
+
+
+## Declarative interface
+
+With declarative interface you can get error only on config reload.
+All the described parameters are copied to memory. ModuleReloader object
+will be locked only in case any parameter in tree of reloader was changed.
+
+
+```go
+
+var _ = Config("/moosic", func () {
+    SubConfig("/tp", func () {
+        Param("/handlers_memory_checks", Bool)
+        Param("/log_slots_states", Bool)
+        Param("/logdir", Str)
+
+        SubConfig("/statistic", func() {
+            Param("/carbide", HostPort)
+            Param("/prefix", Str)
+        })
+
+        SubConfig("/qm_jobs", func() {
+            DynamicSubConfigs("job", regexp.MustCompile("^\\d+$"), func () {
+                Param("/epi", Int)
+                Param("/max_slots", Int)
+                // DynamicSubConfigMap("job_by_qid")
+            })
+        })
+
+    })
+
+})
+
+```
+
+TODO все через методы, а не через поля!
+```go
+
+type MoosicConfig struct {
+    TP TPConfig
+}
+
+type TPConfig struct {
+    HandlersMemoryChecks bool
+    LogSlotsStates bool
+    Logdir string
+    Statistic StatisticConfig
+    QMJobs  QMJobsConfig
+}
+
+type StatisticConfig struct {
+    Carbide string
+    Prefix string
+}
+
+type QMJobsConfig struct {
+    JobsConfigs []JobConfig
+}
+
+type JobConfig struct {
+    ConfigName string // source name that was matched for regexp
+    EPI int
+    MaxSlots int
+}
+
+```
