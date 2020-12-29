@@ -1,31 +1,29 @@
 package expr
 
 import (
-	"fmt"
-	"sort"
-
 	"github.com/mrsndmn/onlineconf-go/eval"
 )
 
 // Root is the root object built by the DSL.
-var Root = &RootExpr{}
+var Root = &RootExpr{Configs: []*ConfigExpr{}}
 
 type (
 	// RootExpr is the struct built by the DSL on process start.
 	RootExpr struct {
 		// API contains the API expression built by the DSL.
-		Config *ConfigExpr
+		Configs []*ConfigExpr
 	}
 )
 
 // WalkSets returns the expressions in order of evaluation.
 func (r *RootExpr) WalkSets(walk eval.SetWalker) {
-	if r.Config == nil {
-		name := "Config"
-		r.Config = NewConfigExpr(name, func() {})
+	if r.Configs == nil {
+		return
 	}
 
-	walk(eval.ExpressionSet{r.Config})
+	for _, cfg := range r.Configs {
+		walk(eval.ExpressionSet{cfg})
+	}
 }
 
 // DependsOn returns nil, the core DSL has no dependency.
@@ -47,9 +45,10 @@ func (r *RootExpr) EvalName() string {
 // Validate makes sure the root expression is valid for code generation.
 func (r *RootExpr) Validate() error {
 	var verr eval.ValidationErrors
-	if r.Config == nil {
-		verr.Add(r, "Missing Config declaration")
+	if len(r.Configs) == 0 {
+		verr.Add(r, "Missing Configs declaration")
 	}
+
 	return &verr
 }
 

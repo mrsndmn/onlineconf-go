@@ -12,6 +12,7 @@ type (
 		Kind() Kind
 		// Name returns the type name.
 		Name() string
+		IsCompatible(val interface{}) bool
 	}
 
 	// Primitive is the type for null, boolean, integer, number, string, and time.
@@ -49,9 +50,7 @@ const (
 	// BytesKind represent a series of bytes (binary data).
 	BytesKind
 	// JSONKind represents a JSON array.
-	JSONKind
-	// AnyKind represents an unknown type.
-	AnyKind
+	// JSONKind
 )
 
 const (
@@ -87,9 +86,6 @@ const (
 
 	// Bytes is the type for binary data.
 	Bytes = Primitive(BytesKind)
-
-	// Any is the type for an arbitrary JSON value (interface{} in Go).
-	Any = Primitive(AnyKind)
 )
 
 // Kind implements DataKind.
@@ -120,23 +116,41 @@ func (p Primitive) Name() string {
 		return "string"
 	case Bytes:
 		return "bytes"
-	case Any:
-		return "any"
 	default:
 		panic("unknown primitive type") // bug
 	}
 }
 
-func (j JSON) Kind() Kind {
-	return JSONKind
-}
+func (p Primitive) IsCompatible(val interface{}) bool {
 
-func (j JSON) Name() string {
-	return "json"
+	switch val.(type) {
+	case bool:
+		return p == Boolean
+	case int, int8, int16, int32, uint, uint8, uint16, uint32:
+		return p == Int || p == Int32 || p == Int64 ||
+			p == UInt || p == UInt32 || p == UInt64 ||
+			p == Float32 || p == Float64
+	case int64, uint64:
+		return p == Int64 || p == UInt64 || p == Float32 || p == Float64
+	case float32, float64:
+		return p == Float32 || p == Float64
+	case string:
+		return p == String || p == Bytes
+	case []byte:
+		return p == Bytes
+	}
+	return false
 }
 
 func (p OnlineConfPath) IsValid() bool {
 	pstr := string(p)
 
-	return len(pstr) > 0 && (pstr == "/" || ( strings.HasPrefix(pstr, "/") &&! strings.HasSuffix(pstr, "/") ))
+	if pstr == "" {
+		return true
+	}
+	if pstr == "/" {
+		return false
+	}
+
+	return strings.HasPrefix(pstr, "/") && !strings.HasSuffix(pstr, "/") && !strings.Contains(pstr, "//")
 }

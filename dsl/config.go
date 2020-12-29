@@ -17,6 +17,33 @@ func Config(prefix string, fn func()) *expr.ConfigExpr {
 		eval.IncompatibleDSL()
 		return nil
 	}
-	expr.Root.Config = expr.NewConfigExpr(OCprefix, fn)
-	return expr.Root.Config
+
+	confExpr := expr.NewConfigExpr(OCprefix, fn)
+	expr.Root.Configs = append(expr.Root.Configs, confExpr)
+
+	eval.Execute(fn, confExpr)
+
+	return confExpr
+}
+
+func SubConfig(prefix string, fn func()) *expr.ConfigExpr {
+
+	OCprefix := expr.OnlineConfPath(prefix)
+	if !OCprefix.IsValid() {
+		eval.ReportError("SubConfig path is not valid OnlineConf prefix")
+		return nil
+	}
+
+	topConfig, ok := eval.Current().(*expr.ConfigExpr)
+	if !ok {
+		eval.IncompatibleDSL()
+		return nil
+	}
+
+	subCconfExpr := expr.NewConfigExpr(topConfig.Prefix+OCprefix, fn)
+	expr.Root.Configs = append(expr.Root.Configs, subCconfExpr)
+
+	eval.Execute(fn, subCconfExpr)
+
+	return subCconfExpr
 }

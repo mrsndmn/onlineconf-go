@@ -41,6 +41,12 @@ func Default(defaultValue interface{}) {
 		return
 	}
 
+	if param.DType != nil && !param.DType.IsCompatible(defaultValue) {
+		eval.ReportError("default value %#v is incompatible with attribute of type %s",
+			defaultValue, param.DType.Name())
+		return
+	}
+
 	// todo validate default value
 	param.Default = defaultValue
 

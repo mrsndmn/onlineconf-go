@@ -30,7 +30,7 @@ will be locked only in case any parameter in tree of reloader was changed.
 
 ```go
 
-var _ = Config("/moosic", func () {
+var _ = Config("/onlineconf-go", func () {
     SubConfig("/tp", func () {
         Param("/handlers_memory_checks", Bool)
         Param("/log_slots_states", Bool)
