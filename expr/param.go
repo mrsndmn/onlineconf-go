@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"github.com/mrsndmn/onlineconf-go/eval"
+	"goa.design/goa/v3/eval"
 )
 
 type (

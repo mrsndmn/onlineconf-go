@@ -3,19 +3,17 @@ package main
 import (
 	"fmt"
 	"go/build"
-	"go/parser"
-	"go/token"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 
+	ocgenerator "github.com/mrsndmn/onlineconf-go/codegen/generator"
 	"goa.design/goa/v3/codegen"
-	"golang.org/x/tools/go/packages"
+	"goa.design/goa/v3/codegen/generator"
 )
 
 // Generator is the code generation management data structure.
@@ -47,33 +45,12 @@ func NewGenerator(cmd string, path, output string) *Generator {
 		bin += ".exe"
 	}
 
-	var version int
-	{
-		version = 2
-		matched := false
-		pkgs, _ := packages.Load(&packages.Config{Mode: packages.NeedFiles}, path)
-		fset := token.NewFileSet()
-		p := regexp.MustCompile(`goa.design/goa/v(\d+)/dsl`)
-		for _, pkg := range pkgs {
-			for _, gof := range pkg.GoFiles {
-				if bs, err := ioutil.ReadFile(gof); err == nil {
-					if f, err := parser.ParseFile(fset, "", string(bs), parser.ImportsOnly); err == nil {
-						for _, s := range f.Imports {
-							matches := p.FindStringSubmatch(s.Path.Value)
-							if len(matches) == 2 {
-								matched = true
-								version, _ = strconv.Atoi(matches[1]) // We know it's an integer
-							}
-						}
-					}
-				}
-				if matched {
-					break
-				}
-			}
-			if matched {
-				break
-			}
+	generator.Generators = func(cmd string) ([]generator.Genfunc, error) {
+		switch cmd {
+		case "gen":
+			return []generator.Genfunc{ocgenerator.Config}, nil
+		default:
+			return nil, fmt.Errorf("unknown command %q", cmd)
 		}
 	}
 
@@ -81,7 +58,7 @@ func NewGenerator(cmd string, path, output string) *Generator {
 		Command:       cmd,
 		DesignPath:    path,
 		Output:        output,
-		DesignVersion: version,
+		DesignVersion: 3,
 		bin:           bin,
 	}
 }

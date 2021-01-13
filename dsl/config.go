@@ -1,8 +1,8 @@
 package dsl
 
 import (
-	"github.com/mrsndmn/onlineconf-go/eval"
 	"github.com/mrsndmn/onlineconf-go/expr"
+	"goa.design/goa/v3/eval"
 )
 
 func Config(prefix string, fn func()) *expr.ConfigExpr {

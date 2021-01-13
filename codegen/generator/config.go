@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	cgconfig "github.com/mrsndmn/onlineconf-go/codegen/config"
-	"github.com/mrsndmn/onlineconf-go/eval"
 	"github.com/mrsndmn/onlineconf-go/expr"
 	"goa.design/goa/v3/codegen"
+	"goa.design/goa/v3/eval"
 )
 
 func Config(genpkg string, roots []eval.Root) ([]*codegen.File, error) {
