@@ -20,6 +20,7 @@ type (
 
 // NewParamExpr initializes an API expression.
 func NewParamExpr(path OnlineConfPath, dtype DataType, dsl func()) *ParamExpr {
+
 	curParam := &ParamExpr{
 		Path:    path,
 		DSLFunc: dsl,
